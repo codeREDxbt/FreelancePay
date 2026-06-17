@@ -1,0 +1,25 @@
+allowBuilds:
+  '@firebase/util': set this to true or false
+  '@reown/appkit': set this to true or false
+  '@sentry/cli': set this to true or false
+  '@stellar/stellar-sdk': set this to true or false
+  blake-hash: set this to true or false
+  bufferutil: set this to true or false
+  core-js: set this to true or false
+  protobufjs: set this to true or false
+  secp256k1: set this to true or false
+  sharp: set this to true or false
+  tiny-secp256k1: set this to true or false
+  unrs-resolver: set this to true or false
+  usb: set this to true or false
+  utf-8-validate: set this to true or false
+
+minimumReleaseAge: 3d
+minimumReleaseAgeExclude:
+  - '@firebase/rules-unit-testing'
+  - '@next/swc-*'
+  - '@tailwindcss/oxide-*'
+  - '@rollup/rollup-*'
+  - '@img/sharp-*'
+  - 'fsevents'
+trustPolicy: no-downgrade
