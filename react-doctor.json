@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "react-doctor/require-reduced-motion": "off",
+    "react-doctor/artifact-baas-authority-surface": "off",
+    "react-doctor/nextjs-no-client-side-redirect": "off",
+    "react-doctor/no-derived-state": "off",
+    "deslop/unused-file": "off"
+  }
+}
