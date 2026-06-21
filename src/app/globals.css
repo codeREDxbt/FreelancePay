@@ -1,0 +1,336 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────
+   STEP 1: Raw CSS custom properties on :root (light mode defaults)
+   These are plain CSS vars — any selector can override them.
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --cp-primary:                    #05696d;
+  --cp-primary-hover:              #04585c;
+  --cp-primary-container:          #308286;
+  --cp-primary-fixed:              #a2f0f4;
+  --cp-primary-fixed-dim:          #86d3d7;
+  --cp-inverse-primary:            #86d3d7;
+  --cp-on-primary:                 #ffffff;
+  --cp-on-primary-fixed:           #002021;
+  --cp-on-primary-fixed-variant:   #004f52;
+  --cp-on-primary-container:       #ffffff;
+  --cp-surface-tint:               #06696d;
+
+  /* Secondary */
+  --cp-secondary:                  #486364;
+  --cp-secondary-container:        #cae8e9;
+  --cp-secondary-fixed:            #cae8e9;
+  --cp-secondary-fixed-dim:        #afcccd;
+  --cp-on-secondary:               #ffffff;
+  --cp-on-secondary-container:     #4e696a;
+  --cp-on-secondary-fixed:         #021f21;
+  --cp-on-secondary-fixed-variant: #304b4c;
+
+  /* Tertiary */
+  --cp-tertiary:                   #8b4f2b;
+  --cp-tertiary-container:         #a86741;
+  --cp-tertiary-fixed:             #ffdbca;
+  --cp-tertiary-fixed-dim:         #ffb68e;
+  --cp-on-tertiary:                #ffffff;
+  --cp-on-tertiary-container:      #0f0300;
+  --cp-on-tertiary-fixed:          #331200;
+  --cp-on-tertiary-fixed-variant:  #6e3816;
+
+  /* Error */
+  --cp-error:                      #ba1a1a;
+  --cp-error-container:            #ffdad6;
+  --cp-on-error:                   #ffffff;
+  --cp-on-error-container:         #93000a;
+
+  /* Surfaces — Ivory / Warm White */
+  --cp-background:                 #fdfcf8;
+  --cp-surface:                    #fdfcf8;
+  --cp-surface-bright:             #fdfcf8;
+  --cp-surface-dim:                #e5e3dc;
+  --cp-surface-variant:            #eeebe4;
+  --cp-surface-container-lowest:   #ffffff;
+  --cp-surface-container-low:      #f6f5ee;
+  --cp-surface-container:          #f0efe8;
+  --cp-surface-container-high:     #eae9e2;
+  --cp-surface-container-highest:  #e4e2db;
+  --cp-inverse-surface:            #32302d;
+  --cp-inverse-on-surface:         #f6f5f1;
+
+  /* Text */
+  --cp-on-background:              #181c1d;
+  --cp-on-surface:                 #181c1d;
+  --cp-on-surface-variant:         #3f4949;
+  --cp-outline:                    #6f7979;
+  --cp-outline-variant:            #bec9c9;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   STEP 2: Dark Mode — override the raw vars when html has .dark
+   ───────────────────────────────────────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+
+  /* Brand */
+  --cp-primary:                    #86d3d7;
+  --cp-primary-hover:              #a2f0f4;
+  --cp-primary-container:          #004f52;
+  --cp-primary-fixed:              #a2f0f4;
+  --cp-primary-fixed-dim:          #86d3d7;
+  --cp-inverse-primary:            #05696d;
+  --cp-on-primary:                 #003739;
+  --cp-on-primary-fixed:           #002021;
+  --cp-on-primary-fixed-variant:   #004f52;
+  --cp-on-primary-container:       #a2f0f4;
+  --cp-surface-tint:               #86d3d7;
+
+  /* Secondary */
+  --cp-secondary:                  #afcccd;
+  --cp-secondary-container:        #304b4c;
+  --cp-secondary-fixed:            #cae8e9;
+  --cp-secondary-fixed-dim:        #afcccd;
+  --cp-on-secondary:               #193435;
+  --cp-on-secondary-container:     #cae8e9;
+  --cp-on-secondary-fixed:         #021f21;
+  --cp-on-secondary-fixed-variant: #304b4c;
+
+  /* Tertiary */
+  --cp-tertiary:                   #ffb68e;
+  --cp-tertiary-container:         #6e3816;
+  --cp-tertiary-fixed:             #ffdbca;
+  --cp-tertiary-fixed-dim:         #ffb68e;
+  --cp-on-tertiary:                #522300;
+  --cp-on-tertiary-container:      #ffdbca;
+  --cp-on-tertiary-fixed:          #331200;
+  --cp-on-tertiary-fixed-variant:  #6e3816;
+
+  /* Error */
+  --cp-error:                      #ffb4ab;
+  --cp-error-container:            #93000a;
+  --cp-on-error:                   #690005;
+  --cp-on-error-container:         #ffdad6;
+
+  /* Surfaces */
+  --cp-background:                 #111414;
+  --cp-surface:                    #111414;
+  --cp-surface-bright:             #373a3a;
+  --cp-surface-dim:                #111414;
+  --cp-surface-variant:            #3f4949;
+  --cp-surface-container-lowest:   #0b0e0e;
+  --cp-surface-container-low:      #181c1c;
+  --cp-surface-container:          #1d2020;
+  --cp-surface-container-high:     #272a2a;
+  --cp-surface-container-highest:  #323535;
+  --cp-inverse-surface:            #eef1f1;
+  --cp-inverse-on-surface:         #2d3131;
+
+  /* Text */
+  --cp-on-background:              #e1e3e3;
+  --cp-on-surface:                 #e1e3e3;
+  --cp-on-surface-variant:         #bec9c9;
+  --cp-outline:                    #899393;
+  --cp-outline-variant:            #3f4949;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   STEP 3: Register with @theme so Tailwind generates utility classes.
+   These forward directly to the raw vars above, so dark mode works.
+   ───────────────────────────────────────────────────────────────── */
+@theme inline {
+  /* Colors — all forward to the raw --cp-* vars */
+  --color-primary:                  var(--cp-primary);
+  --color-primary-hover:            var(--cp-primary-hover);
+  --color-primary-container:        var(--cp-primary-container);
+  --color-primary-fixed:            var(--cp-primary-fixed);
+  --color-primary-fixed-dim:        var(--cp-primary-fixed-dim);
+  --color-inverse-primary:          var(--cp-inverse-primary);
+  --color-on-primary:               var(--cp-on-primary);
+  --color-on-primary-fixed:         var(--cp-on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--cp-on-primary-fixed-variant);
+  --color-on-primary-container:     var(--cp-on-primary-container);
+  --color-surface-tint:             var(--cp-surface-tint);
+
+  --color-secondary:                  var(--cp-secondary);
+  --color-secondary-container:        var(--cp-secondary-container);
+  --color-secondary-fixed:            var(--cp-secondary-fixed);
+  --color-secondary-fixed-dim:        var(--cp-secondary-fixed-dim);
+  --color-on-secondary:               var(--cp-on-secondary);
+  --color-on-secondary-container:     var(--cp-on-secondary-container);
+  --color-on-secondary-fixed:         var(--cp-on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--cp-on-secondary-fixed-variant);
+
+  --color-tertiary:                   var(--cp-tertiary);
+  --color-tertiary-container:         var(--cp-tertiary-container);
+  --color-tertiary-fixed:             var(--cp-tertiary-fixed);
+  --color-tertiary-fixed-dim:         var(--cp-tertiary-fixed-dim);
+  --color-on-tertiary:                var(--cp-on-tertiary);
+  --color-on-tertiary-container:      var(--cp-on-tertiary-container);
+  --color-on-tertiary-fixed:          var(--cp-on-tertiary-fixed);
+  --color-on-tertiary-fixed-variant:  var(--cp-on-tertiary-fixed-variant);
+
+  --color-error:                      var(--cp-error);
+  --color-error-container:            var(--cp-error-container);
+  --color-on-error:                   var(--cp-on-error);
+  --color-on-error-container:         var(--cp-on-error-container);
+
+  --color-background:                  var(--cp-background);
+  --color-surface:                     var(--cp-surface);
+  --color-surface-bright:              var(--cp-surface-bright);
+  --color-surface-dim:                 var(--cp-surface-dim);
+  --color-surface-variant:             var(--cp-surface-variant);
+  --color-surface-container-lowest:    var(--cp-surface-container-lowest);
+  --color-surface-container-low:       var(--cp-surface-container-low);
+  --color-surface-container:           var(--cp-surface-container);
+  --color-surface-container-high:      var(--cp-surface-container-high);
+  --color-surface-container-highest:   var(--cp-surface-container-highest);
+  --color-inverse-surface:             var(--cp-inverse-surface);
+  --color-inverse-on-surface:          var(--cp-inverse-on-surface);
+
+  --color-on-background:               var(--cp-on-background);
+  --color-on-surface:                  var(--cp-on-surface);
+  --color-on-surface-variant:          var(--cp-on-surface-variant);
+  --color-outline:                     var(--cp-outline);
+  --color-outline-variant:             var(--cp-outline-variant);
+
+  /* Spacing */
+  --spacing-gutter:         24px;
+  --spacing-section-gap:    32px;
+  --spacing-card-padding:   16px;
+  --spacing-margin-desktop: 48px;
+  --spacing-margin-mobile:  16px;
+  --spacing-base:           4px;
+
+  /* Radius */
+  --radius:      0.25rem;
+  --radius-lg:   0.5rem;
+  --radius-xl:   0.75rem;
+  --radius-full: 9999px;
+
+  /* Fonts */
+  --font-headline-lg:        var(--font-geist-sans), var(--font-inter), sans-serif;
+  --font-headline-lg-mobile: var(--font-geist-sans), var(--font-inter), sans-serif;
+  --font-section-title:      var(--font-geist-sans), var(--font-inter), sans-serif;
+  --font-card-title:         var(--font-inter), sans-serif;
+  --font-body-base:          var(--font-inter), sans-serif;
+  --font-ui-label:           var(--font-public-sans), var(--font-inter), sans-serif;
+  --font-mono-data:          var(--font-jetbrains-mono), monospace;
+}
+
+/* ─── Base Styles ────────────────────────────────────────────────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--cp-background);
+  color: var(--cp-on-background);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Smooth transitions for dark mode ───────────────────────────── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* ─── Material Symbols ───────────────────────────────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+/* ─── Bento Card ─────────────────────────────────────────────────── */
+.bento-card {
+  background: var(--cp-surface-container-lowest);
+  border: 1px solid var(--cp-outline-variant);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.bento-card:hover {
+  border-color: var(--cp-primary);
+}
+
+/* ─── Primary Button Inset ───────────────────────────────────────── */
+.btn-primary-inset {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-primary-inset:active {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
+}
+
+/* ─── Scrollbar Hide ─────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─── Typography utilities ───────────────────────────────────────── */
+@layer utilities {
+  .text-headline-lg {
+    font-size: 32px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  .text-headline-lg-mobile {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+  .text-section-title {
+    font-size: 24px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .text-card-title {
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .text-body-base {
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .text-ui-label {
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 500;
+  }
+  .text-mono-data {
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+}
+
+/* ─── Reduced Motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } } 
