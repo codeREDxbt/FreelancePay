@@ -1,5 +1,0 @@
-.next/
-functions/
-package.json
-src/components/Redirect.tsx
-src/hooks/useEscrow.ts
