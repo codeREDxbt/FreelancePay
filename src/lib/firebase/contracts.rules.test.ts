@@ -49,11 +49,21 @@ const sampleFeedback = (wallet: string) => ({
 
 beforeAll(async () => {
   const rulesPath = resolve(process.cwd(), "firestore.rules");
+
+  // Parse FIRESTORE_EMULATOR_HOST if set (e.g. "localhost:8080")
+  const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
+  const firestoreConfig: Record<string, unknown> = {
+    rules: readFileSync(rulesPath, "utf8"),
+  };
+  if (emulatorHost) {
+    const [host, portStr] = emulatorHost.split(":");
+    firestoreConfig.host = host;
+    firestoreConfig.port = parseInt(portStr, 10);
+  }
+
   testEnv = await initializeTestEnvironment({
     projectId: "freelancepay-rules-test",
-    firestore: { 
-      rules: readFileSync(rulesPath, "utf8"),
-    },
+    firestore: firestoreConfig as { rules: string; host?: string; port?: number },
   });
 });
 

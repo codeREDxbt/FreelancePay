@@ -76,13 +76,7 @@ jobs:
         run: npm install -g firebase-tools
 
       - name: Run Firestore emulator & rules tests
-        run: |
-          firebase emulators:exec --only firestore "pnpm test:rules" &
-          EMU_PID=$!
-          # Wait for emulator to be ready then run tests
-          npx wait-on tcp:8080 -t 30000 2>/dev/null || true
-          pnpm test:rules
-          kill $EMU_PID 2>/dev/null || true
+        run: firebase emulators:exec --only firestore "pnpm test:rules"
         env:
           FIRESTORE_EMULATOR_HOST: localhost:8080
 
