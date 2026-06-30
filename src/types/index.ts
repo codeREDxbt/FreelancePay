@@ -24,6 +24,8 @@ export interface Contract {
   milestones: Milestone[];
   isDisputed: boolean;
   isClosed: boolean;
+  jobId?: string;
+  applicationId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +55,34 @@ export interface NewContractFormData {
   description: string;
   freelancerAddress: string;
   milestones: { description: string; amount: string; deliverableUrl?: string }[];
+  jobId?: string;
+  applicationId?: string;
+}
+
+export type JobStatus = "open" | "closed";
+
+export interface Job {
+  id: string;
+  clientId: string;
+  title: string;
+  description: string;
+  budget: string;
+  status: JobStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type ApplicationStatus = "pending" | "accepted" | "rejected";
+
+export interface JobApplication {
+  id: string;
+  jobId: string;
+  freelancerWallet: string;
+  proposal: string;
+  bidAmount: string;
+  status: ApplicationStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AccountBalanceResult {

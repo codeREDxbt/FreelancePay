@@ -60,8 +60,15 @@ export default function AuthWizard() {
   const handleWalletSelect = async (id: string) => {
     const success = await connectWallet(id);
     if (success) {
+      const address = localStorage.getItem("fp_wallet_address");
+      const hasProfile = address ? !!localStorage.getItem(`fp_profile_${address}`) : false;
+      
       setDirection(1);
-      setStep(2);
+      if (hasProfile) {
+        setStep(4);
+      } else {
+        setStep(2);
+      }
     }
   };
 
