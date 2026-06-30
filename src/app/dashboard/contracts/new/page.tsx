@@ -80,15 +80,18 @@ function NewContractForm() {
         contractAddress: txHash,
         isDisputed: false,
         isClosed: false,
-        jobId: formData.jobId,
-        applicationId: formData.applicationId,
-        milestones: formData.milestones.map((m, idx) => ({
-          id: idx + 1,
-          description: m.description || `Milestone ${idx + 1}`,
-          amount: parseFloat(m.amount || "0"),
-          status: "pending",
-          deliverableUrl: m.deliverableUrl || undefined,
-        }))
+        jobId: formData.jobId || null,
+        applicationId: formData.applicationId || null,
+        milestones: formData.milestones.map((m, idx) => {
+          const milestone: any = {
+            id: idx + 1,
+            description: m.description || `Milestone ${idx + 1}`,
+            amount: parseFloat(m.amount || "0"),
+            status: "pending",
+          };
+          if (m.deliverableUrl) milestone.deliverableUrl = m.deliverableUrl;
+          return milestone;
+        })
       });
 
       // Update Job and Application statuses if they exist
