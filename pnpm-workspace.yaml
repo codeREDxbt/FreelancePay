@@ -16,12 +16,4 @@ allowBuilds:
   usb: set this to true or false
   utf-8-validate: set this to true or false
 
-minimumReleaseAge: 3d
-minimumReleaseAgeExclude:
-  - '@firebase/rules-unit-testing'
-  - '@next/swc-*'
-  - '@tailwindcss/oxide-*'
-  - '@rollup/rollup-*'
-  - '@img/sharp-*'
-  - 'fsevents'
 trustPolicy: no-downgrade
