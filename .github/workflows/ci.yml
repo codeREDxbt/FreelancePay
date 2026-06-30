@@ -52,6 +52,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
