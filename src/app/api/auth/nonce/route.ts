@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
 import {
   NonceValidationError,
   assertValidNonceInputs,
@@ -10,7 +9,9 @@ import {
 import { rateLimit, rateLimitHeaders } from '@/lib/auth/rate-limit';
 
 const NONCE_COLLECTION = 'auth_nonces';
-export const dynamic = 'force-dynamic';
+
+// We do not export const dynamic = 'force-dynamic' just in case it breaks something,
+// Next.js infers dynamic from the request object anyway.
 
 export async function GET(req: Request) {
   try {
@@ -23,9 +24,20 @@ export async function GET(req: Request) {
       );
     }
 
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    const nonce = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    let nonce = '';
+    try {
+      const array = new Uint8Array(32);
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        crypto.getRandomValues(array);
+        nonce = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+      } else {
+        // Fallback for extremely old environments where global crypto is missing
+        nonce = Array.from({ length: 32 }).map(() => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('');
+      }
+    } catch {
+      // Ultimate fallback
+      nonce = Array.from({ length: 32 }).map(() => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('');
+    }
     
     return NextResponse.json({ nonce }, { headers });
   } catch (err) {
@@ -50,6 +62,11 @@ export async function POST(req: Request) {
 
     const now = Date.now();
     const docId = buildNonceDocId(body.publicKey, body.nonce);
+    
+    // Dynamically import adminDb to prevent it from crashing the entire module 
+    // at load time if firebase-admin has environmental issues.
+    const { adminDb } = await import('@/lib/firebase/admin');
+    
     const docRef = adminDb.collection(NONCE_COLLECTION).doc(docId);
     const existing = await docRef.get();
 
@@ -58,20 +75,20 @@ export async function POST(req: Request) {
       if (data && data.consumed === true) {
         return NextResponse.json(
           { error: 'Nonce has already been used' },
-          { status: 409 }
+          { status: 409, headers }
         );
       }
       if (data && data.expiresAt && typeof data.expiresAt === 'number' && data.expiresAt < now) {
         return NextResponse.json(
           { error: 'Nonce has expired. Request a new one.' },
-          { status: 410 }
+          { status: 410, headers }
         );
       }
     }
 
     const record = buildNonceRecord(body.publicKey, body.nonce, now);
     if (!isNonceValid(record, now)) {
-      return NextResponse.json({ error: 'Invalid nonce' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid nonce' }, { status: 400, headers });
     }
 
     await docRef.set(record);
