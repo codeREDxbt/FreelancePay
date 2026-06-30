@@ -28,7 +28,7 @@ const variants = {
 };
 
 export default function AuthWizard() {
-  const { isConnected, supportedWallets, connectWallet, publicKey } = useWallet();
+  const { isConnected, supportedWallets, connectWallet, disconnectWallet, publicKey, walletNetwork } = useWallet();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [role, setRole] = useState<"freelancer" | "client" | null>(null);
@@ -49,6 +49,44 @@ export default function AuthWizard() {
   };
 
   const emailProvider = getEmailProvider(email);
+
+  const configuredSiteNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? "MAINNET" : "TESTNET";
+  const isWrongNetwork = isConnected && walletNetwork && walletNetwork !== configuredSiteNetwork;
+
+  if (isWrongNetwork) {
+    return (
+      <div className="min-h-screen bg-bg-void flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+        />
+        <Link href="/" className="absolute top-8 left-8 z-20">
+          <Logo iconSize={32} textSize="text-xl" subTextSize="text-[8px]" />
+        </Link>
+
+        <div className="relative z-10 w-full max-w-[480px] card glass-panel rounded-[20px] overflow-hidden flex flex-col p-8 items-center text-center">
+          <div className="w-16 h-16 rounded-full bg-status-error/10 flex items-center justify-center text-status-error mb-4">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </div>
+          <h2 className="text-section-title text-ink-primary mb-2">Wrong Network</h2>
+          <p className="text-ui-label text-ink-secondary mb-6">
+            Your wallet is connected to <strong className="text-status-error">{walletNetwork}</strong>, but FreelancePay is currently running on <strong className="text-status-success">{configuredSiteNetwork}</strong>.
+          </p>
+          <p className="text-[14px] text-ink-tertiary mb-8">
+            Please open your wallet extension, switch your network to {configuredSiteNetwork}, and verify again.
+          </p>
+          <div className="flex w-full gap-4">
+            <button onClick={disconnectWallet} className="flex-1 p-3 border-2 border-edge-neutral bg-bg-interactive rounded-xl font-bold text-ink-primary hover:border-ink-secondary transition-colors">
+              Disconnect
+            </button>
+            <button onClick={() => window.location.reload()} className="flex-1 p-3 neopop-button-teal rounded-xl font-bold">
+              Verify Network
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If already fully connected and wizard is done, or if just revisiting
   // We'll let them go through the wizard if they are here, but if they hit step 4, we redirect.
