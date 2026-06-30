@@ -556,12 +556,17 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                     </div>
                   </div>
 
+                  {Number(amount) > Number(fromBalance) && (
+                    <p className="text-xs text-error font-ui-label text-center mb-2 font-bold uppercase tracking-widest">
+                      Insufficient Balance
+                    </p>
+                  )}
                   <m.button
                     type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={handleReview}
-                    disabled={!quote || !amount || Number(amount) <= 0 || isQuoteLoading}
+                    disabled={!quote || !amount || Number(amount) <= 0 || isQuoteLoading || Number(amount) > Number(fromBalance)}
                     className="w-full neopop-button-teal py-4 font-ui-label text-sm font-bold uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                   >
                     Review Swap

@@ -72,9 +72,19 @@ export async function submitSignedTransaction(signedXdr: string) {
 
 export async function submitHorizonTransaction(signedXdr: string) {
   const tx = parseSignedXdr(signedXdr);
-  const result = await horizonServer.submitTransaction(tx);
-  if (result && "successful" in result && result.successful === false) {
-    throw new Error(`Classic transaction failed (tx_failed) for hash ${result.hash}`);
+  try {
+    const result = await horizonServer.submitTransaction(tx);
+    if (result && "successful" in result && result.successful === false) {
+      throw new Error(`Classic transaction failed (tx_failed) for hash ${result.hash}`);
+    }
+    return result;
+  } catch (err: any) {
+    if (err.response?.data?.extras?.result_codes) {
+      const codes = err.response.data.extras.result_codes;
+      const txCode = codes.transaction;
+      const opCodes = codes.operations?.join(", ");
+      throw new Error(`Transaction failed: ${txCode} ${opCodes ? `(${opCodes})` : ""}`);
+    }
+    throw err;
   }
-  return result;
 }
