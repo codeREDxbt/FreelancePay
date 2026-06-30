@@ -123,6 +123,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
   }, [isOpen, isConnected, publicKey]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForceHorizon(false);
   }, [amount, direction]);
 
