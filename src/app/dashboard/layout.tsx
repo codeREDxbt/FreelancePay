@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 import { m, AnimatePresence } from 'framer-motion';
 import { Loader2 } from "lucide-react";
@@ -11,10 +9,10 @@ import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopNav } from "@/components/layout/DashboardTopNav";
 import { DashboardMobileNav } from "@/components/layout/DashboardMobileNav";
 import { Redirect } from "@/components/Redirect";
+import { TestnetBanner } from "@/components/TestnetBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { isConnected, isLoading } = useWallet();
 
   if (!isLoading && !isConnected) {
@@ -43,10 +41,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-background font-body-base">
+    <div className="min-h-screen bg-bg-void font-body-base">
+      <TestnetBanner />
       <DashboardSidebar />
       
-      <main className="md:ml-64 min-h-screen pb-16 md:pb-0">
+      <main className="md:ml-[240px] min-h-screen pb-16 md:pb-0 border-l divider">
         <DashboardTopNav />
         
         <AnimatePresence mode="wait">

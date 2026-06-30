@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
-import { Geist, Inter, Public_Sans, JetBrains_Mono } from "next/font/google";
+import { Geist, Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
@@ -14,21 +13,11 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-
-
-const inter = Inter({
-  variable: "--font-inter",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
   display: "swap",
 });
-
-const publicSans = Public_Sans({
-  variable: "--font-public-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
@@ -50,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" />
+        {/* Removed Material Symbols */}
         {/* Blocking script — prevents flash of wrong theme before React hydrates */}
         <script
           id="theme-initializer"
@@ -71,7 +60,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${inter.variable} ${publicSans.variable} ${jetBrainsMono.variable} antialiased font-body-base bg-background text-on-background`}
+        className={`${geistSans.variable} ${outfit.variable} ${jetBrainsMono.variable} antialiased`}
       >
         <PostHogProvider>
           <MotionProvider>

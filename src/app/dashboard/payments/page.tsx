@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Download, ArrowUpRight, ArrowDownLeft, Search, RefreshCw } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import { getUserContracts } from "@/lib/firebase/contracts";
 import type { Contract } from "@/types";
+import { toast } from "sonner";
+import { ErrorBoundary } from "@/components/providers/error-boundary";
 
 function toDate(value: unknown): Date {
   if (value instanceof Date) return value;
@@ -61,6 +63,7 @@ export default function PaymentsPage() {
     isLoading: true,
     contracts: []
   });
+  const [searchTerm, setSearchTerm] = useState("");
   const { activeTab, transactions, isLoading, contracts } = state;
 
   useEffect(() => {
@@ -69,7 +72,6 @@ export default function PaymentsPage() {
       
       // Fetch Contracts for stats and transaction history
       getUserContracts(publicKey).then(data => {
-        
         const txs: PaymentTransaction[] = [];
         data.forEach(c => {
           const isClient = c.clientWallet === publicKey;
@@ -77,7 +79,6 @@ export default function PaymentsPage() {
           
           const dateVal = toDate(c.createdAt);
           
-          // Deposit Event: When the contract was created/funded
           txs.push({
             id: `tx_dep_${c.id}`,
             type: 'deposit',
@@ -86,10 +87,9 @@ export default function PaymentsPage() {
             timestamp: dateVal.getTime(),
             contractTitle: c.title,
             counterparty: counterparty,
-            isIncoming: !isClient // If I'm the freelancer, the deposit is incoming to my escrow
+            isIncoming: !isClient
           });
           
-          // Release Events: For any approved/released milestones
           c.milestones?.forEach(m => {
             if (m.status === 'approved' || m.status === 'released') {
               const rDateVal = toDate(c.updatedAt || c.createdAt);
@@ -101,12 +101,11 @@ export default function PaymentsPage() {
                 timestamp: rDateVal.getTime(),
                 contractTitle: `${c.title} - M${m.id}`,
                 counterparty: counterparty,
-                isIncoming: !isClient // If I'm the freelancer, the release is incoming to my wallet
+                isIncoming: !isClient
               });
             }
           });
           
-          // Refund Event: If contract is disputed
           if (c.isDisputed) {
              const dDateVal = toDate(c.updatedAt || c.createdAt);
              txs.push({
@@ -117,12 +116,11 @@ export default function PaymentsPage() {
                 timestamp: dDateVal.getTime(),
                 contractTitle: `${c.title} (Disputed)`,
                 counterparty: counterparty,
-                isIncoming: isClient // If I'm the client, refund comes back to me
+                isIncoming: isClient
              });
           }
         });
         
-        // Sort descending by date
         txs.sort((a, b) => b.timestamp - a.timestamp);
         
         dispatch({ type: "SET_DATA", payload: { contracts: data, transactions: txs } });
@@ -142,148 +140,216 @@ export default function PaymentsPage() {
 
   const currentEscrow = contracts
     .filter(c => !c.isClosed && !c.isDisputed)
-    .reduce((acc, curr) => acc + Number(curr.totalAmount || 0), 0);
+    .reduce((acc, curr) => {
+      const unreleasedAmount = (curr.milestones || []).reduce((mAcc, m) => {
+        if (m.status !== 'approved' && m.status !== 'released') {
+          return mAcc + Number(m.amount || 0);
+        }
+        return mAcc;
+      }, 0);
+      return acc + unreleasedAmount;
+    }, 0);
+
+  const filteredTransactions = useMemo(() => {
+    let filtered = transactions;
+    if (activeTab !== "all") {
+      filtered = filtered.filter(tx => tx.type === activeTab);
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(tx =>
+        tx.contractTitle.toLowerCase().includes(term) ||
+        tx.counterparty.toLowerCase().includes(term)
+      );
+    }
+    return filtered;
+  }, [transactions, activeTab, searchTerm]);
+
+  const handleExportCSV = useCallback(() => {
+    if (filteredTransactions.length === 0) {
+      toast.error("No transactions to export.");
+      return;
+    }
+    const headers = ["Type", "Amount", "Date", "Contract", "Counterparty"];
+    const FORMULA_PREFIXES = ["=", "+", "-", "@", "\t", "\r"];
+    const escapeCsv = (val: string) => {
+      const sanitized = FORMULA_PREFIXES.includes(val.charAt(0)) ? `'${val}` : val;
+      return `"${sanitized.replace(/"/g, '""')}"`;
+    };
+    const rows = filteredTransactions.map(tx => [
+      tx.type,
+      `${tx.isIncoming ? '+' : '-'}${Number(tx.amount).toFixed(2)} USDC`,
+      tx.dateStr,
+      tx.contractTitle,
+      tx.counterparty,
+    ].map(escapeCsv).join(","));
+    const csv = [headers.map(escapeCsv).join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `freelancepay_transactions_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredTransactions.length} transactions.`);
+  }, [filteredTransactions]);
 
   return (
-    <div className="pt-24 pb-12 px-4 md:px-margin-desktop">
-      {/* ── Header Section ────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-section-gap">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-background">
-            Payments
-          </h2>
-          <p className="font-ui-label text-on-surface-variant mt-1">Track transactions, escrow deposits, and withdrawals.</p>
+    <ErrorBoundary>
+      <div className="p-8 lg:p-12 max-w-7xl mx-auto bg-bg-void min-h-screen text-ink-primary">
+        
+        <div className="mb-12">
+          <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">Wallet & Ramp</h1>
+          <p className="text-ink-secondary font-ui-label text-lg">Manage your on-chain assets and escrow balances.</p>
         </div>
-        <div className="flex gap-3">
-          <button type="button" className="px-4 py-2 bg-surface-container-high border border-outline-variant rounded-lg font-ui-label text-ui-label flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
-            <Download className="w-5 h-5" />
-            Export CSV
-          </button>
-        </div>
-      </div>
 
-      {/* ── Summary Cards ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-section-gap">
-        <div className="bg-primary/5 border border-primary/20 p-card-padding rounded-xl">
-          <span className="font-ui-label text-primary uppercase tracking-wider text-xs font-bold mb-2 block">Total Processed</span>
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono-data text-3xl text-on-background">{totalProcessed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className="font-ui-label text-on-surface-variant">USDC</span>
-          </div>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant p-card-padding rounded-xl">
-          <span className="font-ui-label text-on-surface-variant uppercase tracking-wider text-xs font-bold mb-2 block">Current Escrow Balance</span>
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono-data text-3xl text-on-background">{currentEscrow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className="font-ui-label text-on-surface-variant">USDC</span>
-          </div>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* Left Column: Balances (Massive Text) */}
+          <div className="lg:col-span-5 space-y-12">
+            
+            <div>
+              <p className="font-mono-data text-ink-secondary text-sm uppercase tracking-widest mb-4">Total Value Processed</p>
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono-data text-ink-tertiary text-4xl sm:text-6xl">$</span>
+                <span className="font-headline-lg text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tighter text-ink-primary">
+                  {totalProcessed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
 
-      {/* ── Transaction History ──────────────────────────────────── */}
-      <section>
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-          <div className="flex gap-2 p-1 bg-surface-container-low rounded-lg w-full sm:w-auto overflow-x-auto">
-            {["all", "deposits", "releases", "refunds"].map((tab) => (
-              <button type="button"
-                key={tab}
-                onClick={() => dispatch({ type: "SET_TAB", payload: tab })}
-                className={`px-4 py-1.5 rounded-md font-ui-label text-sm capitalize transition-colors whitespace-nowrap ${
-                  activeTab === tab
-                    ? "bg-surface-container-lowest text-on-background shadow-sm"
-                    : "text-on-surface-variant hover:text-on-background"
-                }`}
+            <div className="pt-8 border-t-2 border-edge-neutral">
+              <p className="font-mono-data text-ink-secondary text-sm uppercase tracking-widest mb-4">Current Escrow Balance</p>
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono-data text-ink-tertiary text-2xl sm:text-4xl">$</span>
+                <span className="font-headline-lg text-4xl sm:text-5xl font-bold tracking-tighter text-accent">
+                  {currentEscrow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-12">
+              <button 
+                type="button" 
+                onClick={handleExportCSV} 
+                className="neopop-button-base w-full py-5 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3"
               >
-                {tab}
+                <Download className="w-5 h-5" />
+                Export CSV Statement
               </button>
-            ))}
+            </div>
+            
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-2.5 text-on-surface-variant w-4 h-4" />
-            <input
-              aria-label="Search transactions"
-              className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-9 pr-4 py-2 font-ui-label text-sm focus:outline-none focus:border-primary"
-              placeholder="Search TXN hash..."
-              type="text"
-            />
-          </div>
-        </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-surface-container-low hidden md:table-header-group">
-              <tr>
-                <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Transaction</th>
-                <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Date</th>
-                <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Contract ID</th>
-                <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-on-surface-variant">
-                    <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-2" />
-                    <p className="font-ui-label">Loading transactions...</p>
-                  </td>
-                </tr>
-              ) : (() => {
-                  const filtered = transactions.filter(tx => {
-                    if (activeTab === "all") return true;
-                    return tx.type === activeTab;
-                  });
+          {/* Right Column: Transaction History */}
+          <div className="lg:col-span-7 bg-bg-base border border-edge-neutral shadow-neopop p-6 lg:p-8 flex flex-col">
+            
+            <div className="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center mb-8 border-b-2 border-edge-neutral pb-6">
+              <h2 className="font-headline-lg text-2xl font-bold tracking-tight">History</h2>
+              
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-2.5 text-ink-tertiary w-4 h-4" />
+                <input
+                  aria-label="Search transactions"
+                  className="w-full bg-transparent border-2 border-edge-neutral focus:border-accent rounded-none pl-10 pr-4 py-2 font-mono-data text-sm outline-none transition-colors text-ink-primary placeholder:text-ink-tertiary"
+                  placeholder="Search TXN hash..."
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
 
-                  if (filtered.length === 0) {
-                    return (
-                      <tr>
-                        <td colSpan={4} className="py-16 px-4">
-                          <div className="max-w-md mx-auto text-center">
-                            <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-4 border border-outline-variant/50">
-                              <RefreshCw className="w-8 h-8 text-on-surface-variant" />
-                            </div>
-                            <h3 className="text-xl font-headline-lg mb-2">No Transactions Found</h3>
-                            <p className="text-sm text-on-surface-variant mb-6">You don&apos;t have any transaction history yet. Your escrow deposits and releases will appear here.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }
+            <div className="flex gap-2 flex-wrap mb-6">
+              {["all", "deposits", "releases", "refunds"].map((tab) => (
+                <button 
+                  type="button"
+                  key={tab}
+                  onClick={() => dispatch({ type: "SET_TAB", payload: tab })}
+                  className={`px-4 py-2 font-ui-label text-xs uppercase tracking-widest font-bold border-2 transition-colors ${
+                    activeTab === tab
+                      ? "bg-ink-primary text-bg-base border-ink-primary"
+                      : "bg-transparent text-ink-secondary border-edge-neutral hover:border-ink-secondary"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-                  return filtered.map((tx: PaymentTransaction) => (
-                    <tr key={tx.id} className="group hover:bg-surface-container-highest transition-colors">
-                      <td className="py-2 md:py-4 px-0 md:px-6">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            tx.type === 'deposit' ? 'bg-primary/10 text-primary' :
-                            tx.type === 'release' ? 'bg-secondary/10 text-secondary' :
-                            'bg-error/10 text-error'
-                          }`}>
-                            {tx.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4" /> : 
-                             tx.type === 'release' ? <ArrowUpRight className="w-4 h-4" /> :
-                             <RefreshCw className="w-4 h-4" />}
-                          </div>
-                          <div>
-                            <p className="font-ui-label text-sm text-on-background capitalize">{tx.type}</p>
-                            <p className="font-ui-label text-xs text-on-surface-variant truncate max-w-[120px] md:max-w-[200px]">{tx.contractTitle}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-1 md:py-4 px-0 md:px-6 font-mono-data text-sm text-on-surface-variant">
-                        {tx.dateStr}
-                      </td>
-                      <td className="py-1 md:py-4 px-0 md:px-6">
-                        <span className="font-ui-label text-sm text-secondary truncate max-w-[150px] inline-block">{tx.counterparty.substring(0, 10)}...</span>
-                      </td>
-                      <td className="py-2 md:py-4 px-0 md:px-6 text-right font-mono-data font-bold text-on-background">
-                        {tx.isIncoming ? "+" : "-"}{Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr>
+                    <th className="py-4 px-2 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-1/3">Type / Contract</th>
+                    <th className="py-4 px-2 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-1/4">Date</th>
+                    <th className="py-4 px-2 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-1/3 text-right">Amount (USDC)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-edge-neutral">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={3} className="py-12 text-center text-ink-tertiary">
+                        <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-2" />
+                        <p className="font-mono-data text-xs uppercase tracking-widest">Loading...</p>
                       </td>
                     </tr>
-                  ));
-              })()}
-            </tbody>
-          </table>
+                  ) : filteredTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="py-16">
+                        <div className="max-w-md mx-auto text-center">
+                          <div className="w-16 h-16 bg-bg-void border-2 border-dashed border-ink-tertiary flex items-center justify-center mx-auto mb-6">
+                            <RefreshCw className="w-6 h-6 text-ink-tertiary" />
+                          </div>
+                          <h3 className="text-xl font-headline-lg font-bold mb-2">No Transactions Found</h3>
+                          <p className="text-sm font-ui-label text-ink-secondary">Your escrow deposits and releases will appear here.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTransactions.map((tx: PaymentTransaction) => (
+                      <tr key={tx.id} className="group hover:bg-bg-void transition-colors cursor-default">
+                        <td className="py-4 px-2">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 border-2 flex items-center justify-center shrink-0 ${
+                              tx.type === 'deposit' ? 'bg-ink-primary text-bg-base border-ink-primary' :
+                              tx.type === 'release' ? 'bg-accent/20 text-accent border-accent' :
+                              'bg-status-disputed/20 text-status-disputed border-status-disputed'
+                            }`}>
+                              {tx.type === 'deposit' ? <ArrowDownLeft className="w-5 h-5" /> : 
+                               tx.type === 'release' ? <ArrowUpRight className="w-5 h-5" /> :
+                               <RefreshCw className="w-5 h-5" />}
+                            </div>
+                            <div>
+                              <p className="font-ui-label font-bold text-sm uppercase tracking-widest">{tx.type}</p>
+                              <p className="font-ui-label text-xs text-ink-secondary truncate max-w-[150px]">{tx.contractTitle}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="font-mono-data text-sm text-ink-secondary">{tx.dateStr}</p>
+                        </td>
+                        <td className="py-4 px-2 text-right">
+                          <p className={`font-mono-data font-bold text-lg tabular-nums ${
+                            tx.isIncoming ? "text-accent" : "text-ink-primary"
+                          }`}>
+                            {tx.isIncoming ? "+" : "-"}{Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
         </div>
-      </section>
-    </div>
+
+      </div>
+    </ErrorBoundary>
   );
 }

@@ -5,6 +5,7 @@ import { BarChart3, TrendingUp, Calendar, Download, RefreshCw } from "lucide-rea
 import { useWallet } from "@/hooks/useWallet";
 import { getUserContracts } from "@/lib/firebase/contracts";
 import type { Contract } from "@/types";
+import { ErrorBoundary } from "@/components/providers/error-boundary";
 
 function toDate(value: unknown): Date {
   if (value instanceof Date) return value;
@@ -34,7 +35,6 @@ export default function AnalyticsPage() {
         if (active) setDataState({ contracts: [], isLoading: false });
       });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDataState({ contracts: [], isLoading: false });
     }
     return () => { active = false; };
@@ -47,6 +47,7 @@ export default function AnalyticsPage() {
     const result = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
+      d.setDate(1);
       d.setMonth(d.getMonth() - i);
       result.push({
         label: d.toLocaleString('default', { month: 'short' }),
@@ -92,84 +93,86 @@ export default function AnalyticsPage() {
     ? ((closedContracts / contracts.length) * 100).toFixed(1)
     : "0.0";
 
-  const maxVolume = Math.max(...last6Months.map(m => m.volume), 1000); // minimum scale 1000
+  const maxVolume = Math.max(...last6Months.map(m => m.volume), 10); // minimum scale 10
 
   return (
-    <div className="pt-24 pb-12 px-4 md:px-margin-desktop">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-section-gap">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-background">
-            Analytics
-          </h2>
-          <p className="font-ui-label text-on-surface-variant mt-1">Volume, performance, and trends over time.</p>
+    <ErrorBoundary>
+      <div className="p-8 lg:p-12 max-w-7xl mx-auto bg-bg-void min-h-screen text-ink-primary">
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div>
+            <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">Analytics</h1>
+            <p className="text-ink-secondary font-ui-label text-lg">Volume, performance, and trends over time.</p>
+          </div>
+          <div className="flex gap-4">
+            <button type="button" className="neopop-button-base px-6 py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center gap-3">
+              <Calendar className="w-5 h-5" />
+              Last 6 Months
+            </button>
+            <button type="button" className="neopop-button-base px-6 py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center gap-3">
+              <Download className="w-5 h-5" />
+              Export
+            </button>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button type="button" className="px-4 py-2 bg-surface-container-high border border-outline-variant rounded-lg font-ui-label text-ui-label flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
-            <Calendar className="w-5 h-5" />
-            Last 6 Months
-          </button>
-          <button type="button" className="px-4 py-2 bg-surface-container-high border border-outline-variant rounded-lg font-ui-label text-ui-label flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
-            <Download className="w-5 h-5" />
-            Export
-          </button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-section-gap">
-        <div className="bg-surface-container-lowest border border-outline-variant p-card-padding rounded-xl lg:col-span-2">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <span className="font-ui-label text-on-surface-variant uppercase tracking-wider text-xs font-bold block mb-1">Contract Volume</span>
-              <div className="flex items-baseline gap-2">
-                {isLoading ? (
-                  <RefreshCw className="w-6 h-6 animate-spin text-on-surface-variant" />
-                ) : (
-                  <span className="font-mono-data text-2xl text-on-background">{totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                )}
-                <span className="font-ui-label text-on-surface-variant">USDC</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="bg-bg-base border border-edge-neutral shadow-neopop p-8 lg:col-span-2 relative">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-12 border-b-2 border-edge-neutral pb-6">
+              <div>
+                <span className="font-mono-data text-ink-secondary uppercase tracking-widest text-xs font-bold block mb-2">Contract Volume</span>
+                <div className="flex items-baseline gap-2">
+                  {isLoading ? (
+                    <RefreshCw className="w-8 h-8 animate-spin text-ink-secondary" />
+                  ) : (
+                    <span className="font-headline-lg text-5xl font-bold tracking-tighter text-accent">{totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  )}
+                  <span className="font-mono-data text-ink-tertiary">USDC</span>
+                </div>
+              </div>
+              <div className="sm:text-right">
+                <span className="font-ui-label text-accent flex items-center gap-2 text-sm font-bold uppercase tracking-widest bg-accent/10 px-3 py-1.5 border border-accent/20">
+                  <TrendingUp className="w-4 h-4" />
+                  Active: {activeContracts}
+                </span>
               </div>
             </div>
-            <div className="text-right">
-              <span className="font-ui-label text-primary flex items-center gap-1 text-sm font-medium">
-                <TrendingUp className="w-4 h-4" />
-                Active: {activeContracts}
-              </span>
-            </div>
-          </div>
-          
-          {/* Dynamic Chart Area */}
-          <div className="h-64 flex items-end gap-2 sm:gap-4 px-2">
-            {last6Months.map((m, i) => {
-              const height = Math.max(5, (m.volume / maxVolume) * 100);
-              return (
-              <div key={m.label + i} className="flex-1 flex flex-col justify-end group">
-                <div 
-                  className="w-full bg-primary/20 rounded-t-sm group-hover:bg-primary transition-colors relative"
-                  style={{ height: `${height}%` }}
-                >
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono-data pointer-events-none">
-                    {m.volume}
+            
+            {/* Dynamic Chart Area */}
+            <div className="h-72 flex items-end gap-3 sm:gap-6">
+              {last6Months.map((m, i) => {
+                const height = Math.max(5, (m.volume / maxVolume) * 100);
+                return (
+                <div key={m.label + i} className="flex-1 flex flex-col justify-end group h-full">
+                  <div 
+                    className="w-full bg-ink-tertiary/20 group-hover:bg-accent border-t-4 border-transparent group-hover:border-accent transition-all relative flex flex-col justify-end"
+                    style={{ height: `${height}%` }}
+                  >
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-ink-primary text-bg-base px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity font-mono-data font-bold text-xs pointer-events-none whitespace-nowrap">
+                      ${m.volume.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-4 text-center font-mono-data font-bold text-xs text-ink-secondary uppercase tracking-widest border-t-2 border-edge-neutral pt-2">
+                    {m.label}
                   </div>
                 </div>
-                <div className="mt-2 text-center font-mono-data text-xs text-on-surface-variant">
-                  {m.label}
-                </div>
-              </div>
-            )})}
-          </div>
-        </div>
-
-        <div className="space-y-gutter">
-          <div className="bg-surface-container-lowest border border-outline-variant p-card-padding rounded-xl h-full flex flex-col justify-center items-center text-center">
-            <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center text-secondary mb-4">
-              <BarChart3 className="w-8 h-8" />
+              )})}
             </div>
-            <h3 className="font-headline-sm text-headline-sm text-on-background mb-2">Completion Rate</h3>
-            <span className="font-mono-data text-4xl text-on-background font-bold">{completedRate}%</span>
-            <p className="font-ui-label text-sm text-on-surface-variant mt-2">of contracts completed</p>
+          </div>
+
+          <div className="flex flex-col gap-12">
+            <div className="bg-bg-base border border-edge-neutral shadow-neopop p-8 flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 border-l border-b border-edge-neutral bg-bg-void" />
+              <div className="w-20 h-20 border-2 border-edge-neutral bg-bg-void flex items-center justify-center text-ink-primary mb-8">
+                <BarChart3 className="w-8 h-8 text-accent" />
+              </div>
+              <h3 className="font-mono-data text-ink-secondary uppercase tracking-widest text-xs font-bold mb-4">Completion Rate</h3>
+              <span className="font-headline-lg text-6xl font-bold tracking-tighter text-ink-primary mb-4">{completedRate}%</span>
+              <p className="font-ui-label text-sm text-ink-tertiary">of total contracts successfully completed</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

@@ -1,379 +1,262 @@
 "use client";
 
+import { m, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
+import { useEffect } from "react";
+import { ArrowRight, Code2, ShieldCheck, Zap } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
-import { m, useScroll, useTransform } from 'framer-motion';
 import { LandingNav } from "@/components/layout/LandingNav";
 import { Footer } from "@/components/layout/Footer";
-import { Reveal } from "@/components/ui/animations/Reveal";
-import { Counter } from "@/components/ui/animations/Counter";
 
-const steps = [
-  {
-    num: "01",
-    icon: "contract",
-    title: "Create Contract",
-    desc: "Define milestones, payment amounts, and terms using our visual contract builder. No coding required.",
-  },
-  {
-    num: "02",
-    icon: "account_balance_wallet",
-    title: "Fund Escrow",
-    desc: "Client deposits USDC into a secure Stellar smart contract. Funds are locked and visible to both parties.",
-  },
-  {
-    num: "03",
-    icon: "release_alert",
-    title: "Release on Milestones",
-    desc: "Once milestones are approved, funds instantly release to the contractor's wallet via Soroban contracts.",
-  },
-];
+export default function Home() {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
+  const smoothMouseX = useSpring(mouseX, springConfig);
+  const smoothMouseY = useSpring(mouseY, springConfig);
+  
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const { innerWidth, innerHeight } = window;
+      const x = (clientX / innerWidth - 0.5) * 2; // -1 to 1
+      const y = (clientY / innerHeight - 0.5) * 2; // -1 to 1
+      mouseX.set(x);
+      mouseY.set(y);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
-const stats = [
-  { value: 500, suffix: "+", label: "Global Teams" },
-  { value: 180, suffix: "+", label: "Countries Supported" },
-  { value: 99, suffix: ".9%", label: "Uptime SLA" },
-];
-
-function HeroSection() {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const cardY = useTransform(scrollYProgress, [0, 1], [0, -40]);
-
+  const xOffset = useTransform(smoothMouseX, [-1, 1], [-20, 20]);
+  const yOffset = useTransform(smoothMouseY, [-1, 1], [-20, 20]);
+  const xOffsetReverse = useTransform(smoothMouseX, [-1, 1], [30, -30]);
+  const yOffsetReverse = useTransform(smoothMouseY, [-1, 1], [30, -30]);
   return (
-    <section ref={heroRef} className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-16 md:pt-32 pb-24 border-b border-outline-variant/20 overflow-visible">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start relative">
-        <div className="lg:col-span-7 max-w-2xl">
-          {/* Breadcrumb / Label */}
-          <m.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="flex items-center gap-2 mb-8 font-mono-data text-[11px] uppercase tracking-widest text-outline"
-          >
-            <span className="text-primary font-medium">Contract</span>
-            <span className="material-symbols-outlined text-[12px] opacity-40">chevron_right</span>
-            <span>New_Agreement.env</span>
+    <div className="min-h-screen bg-bg-void flex flex-col relative overflow-hidden">
+      {/* 3% SVG Noise Texture */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+      />
+
+      <LandingNav />
+
+      <main className="flex-1 flex flex-col relative z-10">
+        {/* HERO SECTION */}
+        <section className="w-full min-h-[90vh] flex items-center justify-center relative overflow-hidden px-margin-mobile md:px-margin-desktop py-20">
+          
+          {/* Background Grid Pattern */}
+          <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
+               style={{ backgroundImage: 'linear-gradient(var(--color-edge-neutral) 1px, transparent 1px), linear-gradient(90deg, var(--color-edge-neutral) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+
+          {/* Interactive Floating Shapes */}
+          <m.div style={{ x: xOffset, y: yOffset }} className="absolute top-[15%] left-[5%] md:left-[15%] z-0 pointer-events-none opacity-50 hidden md:block">
+            <div className="w-24 h-24 border-[4px] border-accent rotate-12" />
+          </m.div>
+          <m.div style={{ x: xOffsetReverse, y: yOffsetReverse }} className="absolute bottom-[20%] right-[10%] z-0 pointer-events-none opacity-50 hidden md:block">
+            <div className="w-32 h-32 rounded-full border-[4px] border-ink-secondary border-dashed -rotate-12" />
           </m.div>
 
-          <m.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
-            className="font-headline-lg text-[42px] md:text-[52px] leading-[1.05] mb-8 text-on-surface tracking-tight max-w-xl"
-          >
-            Programmable trust for the technical workforce.
-          </m.h1>
-
-          <m.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
-            className="font-body-base text-lg text-on-surface-variant mb-12 leading-relaxed max-w-lg"
-          >
-            Automate your payment workflow with milestone-based escrow. Verified via Soroban smart contracts on the Stellar network. No intermediaries, no friction.
-          </m.p>
-
-          <m.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.28 }}
-            className="flex flex-col sm:flex-row items-start sm:items-center gap-8"
-          >
-            <div className="flex flex-col gap-4 w-full sm:w-auto">
-              <Link
-                href="/auth"
-                className="bg-primary text-on-primary px-10 py-4 rounded-lg font-ui-label text-ui-label btn-primary-inset hover:opacity-90 transition-all text-center inline-block"
-              >
-                Initialize Application
-              </Link>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-on-surface-variant">
-                <span className="font-mono-data text-[12px] text-outline">AUDIT_STATUS:</span>
-                <span className="font-mono-data text-[12px] text-primary">SECURED_V2.1</span>
-              </div>
-              <div className="flex items-center gap-2 text-on-surface-variant">
-                <span className="font-mono-data text-[12px] text-outline">NETWORK_LATENCY:</span>
-                <span className="font-mono-data text-[12px]">5.2s_AVG</span>
-              </div>
-            </div>
-          </m.div>
-        </div>
-
-        {/* Technical Blueprint Diagram */}
-        <m.div
-          style={{ y: cardY }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="lg:col-span-5 relative w-full aspect-square md:aspect-video lg:aspect-square bg-surface-container-low rounded-lg border border-outline-variant/30 overflow-hidden bg-[radial-gradient(circle,var(--color-outline-variant)_1px,transparent_1px)] bg-[size:24px_24px]"
-        >
-          <div className="absolute inset-0 p-8 flex flex-col font-mono-data">
-            <div className="flex justify-between items-start mb-12">
-              <div className="space-y-1">
-                <p className="text-[10px] text-outline uppercase">Schema_ID</p>
-                <p className="text-[12px] text-on-surface">SOROBAN_ESCROW_MAIN_01</p>
-              </div>
-              <div className="text-right space-y-1">
-                <p className="text-[10px] text-outline uppercase">Timestamp</p>
-                <p className="text-[12px] text-on-surface">2024.05.12_14:30:01</p>
-              </div>
-            </div>
-            
-            {/* Abstract Blueprint Elements */}
-            <div className="flex-1 flex flex-col justify-center items-center relative">
-              {/* Central Lock Node */}
-              <div className="w-32 h-32 border border-primary/40 rounded-full flex items-center justify-center relative">
-                <div className="w-24 h-24 border border-primary/20 rounded-full animate-[spin_10s_linear_infinite]" />
-                <span className="material-symbols-outlined text-primary text-3xl">lock</span>
-                
-                {/* Connection Lines */}
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-px h-12 bg-primary/30" />
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-px h-12 bg-primary/30" />
-                <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-px bg-primary/30" />
-                <div className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-px bg-primary/30" />
-              </div>
-              
-              {/* Flow Labels */}
-              <div className="absolute top-0 left-0 space-y-4 opacity-40">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-px bg-outline" />
-                  <span className="text-[10px]">AUTH_REQ</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-px bg-outline" />
-                  <span className="text-[10px]">VAL_SIG</span>
-                </div>
-              </div>
-              
-              <div className="absolute bottom-0 right-0 space-y-4 text-right opacity-40">
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-[10px]">RELEASE_CALLBACK</span>
-                  <div className="w-3 h-px bg-outline" />
-                </div>
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-[10px]">TX_FINALIZED</span>
-                  <div className="w-3 h-px bg-outline" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-12 flex items-end justify-between border-t border-outline-variant/30 pt-6">
-              <div className="flex gap-4">
-                <div className="w-8 h-8 border border-outline-variant rounded flex items-center justify-center">
-                  <span className="text-[10px] text-outline">XLM</span>
-                </div>
-                <div className="w-8 h-8 border border-outline-variant rounded flex items-center justify-center">
-                  <span className="text-[10px] text-outline">USDC</span>
-                </div>
-              </div>
-              <div className="text-[10px] text-outline-variant font-mono-data">
-                REF_SPEC: SEP-0024 | SOROBAN-WASM
-              </div>
-            </div>
-          </div>
-        </m.div>
-      </div>
-    </section>
-  );
-}
-
-function StatsSection() {
-  return (
-    <Reveal className="bg-surface-container-low border-y border-outline-variant/30 py-12">
-      <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="grid grid-cols-3 gap-8 text-center">
-          {stats.map((s, i) => (
-            <m.div
-              key={s.label}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            >
-              <p className="font-mono-data text-3xl font-bold text-primary">
-                <Counter to={s.value} suffix={s.suffix} />
-              </p>
-              <p className="font-ui-label text-sm text-on-surface-variant mt-1">{s.label}</p>
-            </m.div>
-          ))}
-        </div>
-      </div>
-    </Reveal>
-  );
-}
-
-function LogosSection() {
-  return (
-    <Reveal className="bg-surface-container-low py-10 border-b border-outline-variant/30">
-      <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop text-center">
-        <p className="font-mono-data text-[10px] uppercase tracking-widest text-outline mb-8">
-          Trusted by 500+ global teams
-        </p>
-        <div className="flex flex-wrap justify-center gap-12 md:gap-20 opacity-40 hover:opacity-70 transition-opacity duration-500">
-          {[
-            { icon: "terminal", name: "DEVSTR" },
-            { icon: "token", name: "BLOCKWORKS" },
-            { icon: "account_balance", name: "FINCORE" },
-            { icon: "public", name: "GLOBEX" },
-          ].map((logo, i) => (
-            <m.div
-              key={logo.name}
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              className="flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-2xl">{logo.icon}</span>
-              <span className="font-headline-lg-mobile text-lg">{logo.name}</span>
-            </m.div>
-          ))}
-        </div>
-      </div>
-    </Reveal>
-  );
-}
-
-function StepsSection() {
-  return (
-    <section className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-28">
-      <Reveal className="text-center mb-16">
-        <h2 className="font-section-title text-section-title text-on-surface mb-4">How it Works</h2>
-        <p className="text-on-surface-variant max-w-xl mx-auto">
-          Three steps to secure commercial agreements on-chain.
-        </p>
-      </Reveal>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-        {/* Connecting line desktop */}
-        <div aria-hidden className="absolute top-8 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-[1px] bg-gradient-to-r from-transparent via-outline-variant to-transparent hidden md:block" />
-
-        {steps.map((step, i) => (
-          <Reveal key={step.title} delay={i * 0.12}>
-            <m.div
-              whileHover={{ y: -4, boxShadow: "0 12px 40px rgba(5,105,109,0.10)" }}
-              className="bento-card p-8 rounded-xl cursor-default transition-shadow relative"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 bg-primary/8 text-primary flex items-center justify-center rounded-xl">
-                  <span className="material-symbols-outlined">{step.icon}</span>
-                </div>
-                <span className="font-mono-data text-4xl font-bold text-outline/20 leading-none">{step.num}</span>
-              </div>
-              <h3 className="font-card-title text-on-surface mb-3">{step.title}</h3>
-              <p className="text-on-surface-variant text-sm leading-relaxed">{step.desc}</p>
-            </m.div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function WhyStellarSection() {
-  return (
-    <section className="bg-surface-container-low border-y border-outline-variant/40 py-28">
-      <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
-          <Reveal className="max-w-xl">
-            <h2 className="font-section-title text-section-title text-on-surface mb-4">Engineered for Finance</h2>
-            <p className="text-on-surface-variant leading-relaxed">
-              Why we chose Stellar and Soroban as the foundation for the next generation of freelance payments.
-            </p>
-          </Reveal>
-          <Reveal>
-            <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-high rounded-lg">
-              <span className="material-symbols-outlined text-sm text-primary">public</span>
-              <span className="font-ui-label text-sm text-on-surface">Global Network</span>
-            </div>
-          </Reveal>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-          {[
-            { icon: "bolt", title: "Low-cost payouts", desc: "Fraction-of-a-cent fees mean more money stays with the workers.", stat: "~$0.001 AVG", statLabel: "Avg. Transaction Fee" },
-            { icon: "code", title: "Trustless contracts", desc: "Milestones are enforced by Soroban smart contracts. No human intervention.", stat: "Audit: Passed (v2.1)", statLabel: "Contract Status" },
-            { icon: "language", title: "Global USDC liquidity", desc: "Access a global network of on/off ramps to move between crypto and fiat.", stat: "150+ Countries", statLabel: "Ramps Available" },
-          ].map((card, i) => (
-            <Reveal key={card.title} delay={i * 0.1}>
+          <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-16 relative z-10">
+            {/* Left: Brutalist Typography */}
+            <div className="w-full md:w-[60%] space-y-10 relative">
               <m.div
-                whileHover={{ y: -4, boxShadow: "0 12px 40px rgba(5,105,109,0.10)" }}
-                className="bento-card p-6 rounded-xl transition-all cursor-default"
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="relative"
               >
-                <span className="material-symbols-outlined text-primary mb-4 block">{card.icon}</span>
-                <h4 className="font-card-title text-on-surface mb-2">{card.title}</h4>
-                <p className="text-sm text-on-surface-variant mb-5 leading-relaxed">{card.desc}</p>
-                <div className="bg-surface-container-high p-3 rounded-lg border border-outline-variant/30">
-                  <p className="font-mono-data text-[9px] text-on-surface-variant uppercase tracking-widest mb-1.5">{card.statLabel}</p>
-                  <p className="font-mono-data text-primary text-lg font-bold">{card.stat}</p>
+                <h1 className="text-[60px] md:text-[100px] leading-[0.85] font-extrabold tracking-tighter font-headline-lg uppercase relative z-10 text-ink-primary">
+                  SHIP CODE.<br/>
+                  <span className="text-transparent bg-clip-text" style={{ WebkitTextStroke: '3px var(--color-ink-primary)' }}>GET PAID.</span><br/>
+                  <span className="text-accent bg-bg-void px-2 inline-block -rotate-2 border-4 border-accent shadow-[8px_8px_0px_var(--color-ink-primary)]">NO TRUST REQ.</span>
+                </h1>
+                {/* Glitch Shadow Effect behind text */}
+                <m.div style={{ x: xOffsetReverse, y: yOffset }} className="absolute inset-0 text-[60px] md:text-[100px] leading-[0.85] font-extrabold tracking-tighter font-headline-lg uppercase text-accent opacity-30 z-0 pointer-events-none select-none blur-sm" aria-hidden="true">
+                  SHIP CODE.<br/>GET PAID.<br/>NO TRUST REQ.
+                </m.div>
+              </m.div>
+
+              <m.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-[20px] md:text-[24px] font-bold text-ink-secondary max-w-lg font-mono-data border-l-4 border-accent pl-6 py-2 uppercase tracking-widest leading-tight"
+              >
+                Cryptographically guaranteed escrows. Zero platform fees. You push, we pay.
+              </m.p>
+
+              <m.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="flex flex-wrap items-center gap-6 pt-4"
+              >
+                <Link href="/auth" className="group relative px-10 py-5 bg-accent text-bg-base font-headline-lg font-bold text-xl uppercase tracking-widest border-4 border-ink-primary hover:-translate-y-1 hover:-translate-x-1 shadow-[8px_8px_0px_var(--color-ink-primary)] hover:shadow-[12px_12px_0px_var(--color-ink-primary)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-[4px_4px_0px_var(--color-ink-primary)] flex items-center gap-3">
+                  Deploy Contract <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                </Link>
+                <Link href="/docs" className="px-8 py-5 border-4 border-edge-neutral bg-bg-base font-headline-lg font-bold text-xl uppercase tracking-widest text-ink-primary hover:bg-ink-primary hover:text-bg-base hover:-translate-y-1 hover:-translate-x-1 shadow-[8px_8px_0px_var(--color-edge-neutral)] transition-all flex items-center gap-2">
+                  <Code2 className="w-6 h-6" /> Specs
+                </Link>
+              </m.div>
+            </div>
+            
+            {/* Right: Draggable Interactive Element */}
+            <m.div 
+              initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+              animate={{ opacity: 1, scale: 1, rotate: 2 }}
+              transition={{ duration: 1, type: "spring", bounce: 0.5, delay: 0.3 }}
+              className="w-full md:w-[40%] flex justify-center md:justify-end relative z-20"
+            >
+              <m.div 
+                drag
+                dragConstraints={{ left: -50, right: 50, top: -50, bottom: 50 }}
+                whileDrag={{ scale: 1.05, rotate: 0, cursor: "grabbing" }}
+                whileHover={{ scale: 1.02 }}
+                className="bg-bg-void border-[4px] border-ink-primary shadow-[16px_16px_0px_var(--color-accent)] w-full max-w-[380px] p-6 cursor-grab relative"
+              >
+                <div className="absolute -top-4 -right-4 bg-accent text-bg-base font-mono-data text-xs font-bold px-3 py-1 border-2 border-ink-primary rotate-12 shadow-[4px_4px_0px_var(--color-ink-primary)]">
+                  DRAG ME
+                </div>
+                <div className="flex items-center justify-between border-b-[4px] border-edge-neutral pb-4 mb-4">
+                  <span className="font-mono-data text-ink-primary text-sm font-bold uppercase tracking-widest">RECEIPT // ESCROW_FUNDED</span>
+                  <div className="flex gap-2">
+                    <div className="w-4 h-4 border-[2px] border-ink-primary bg-bg-base" />
+                    <div className="w-4 h-4 border-[2px] border-ink-primary bg-accent" />
+                  </div>
+                </div>
+                
+                <div className="font-mono-data text-sm md:text-base">
+                  <div className="space-y-4 mb-6">
+                    <div className="flex justify-between border-b-2 border-dashed border-edge-neutral/50 pb-2">
+                      <span className="text-ink-tertiary">Tx Hash</span>
+                      <span className="text-ink-primary font-bold text-accent">0x8f...39a1</span>
+                    </div>
+                    <div className="flex justify-between border-b-2 border-dashed border-edge-neutral/50 pb-2">
+                      <span className="text-ink-tertiary">Amount Locked</span>
+                      <span className="text-ink-primary font-bold">5,000.00 USDC</span>
+                    </div>
+                    <div className="flex justify-between border-b-2 border-dashed border-edge-neutral/50 pb-2">
+                      <span className="text-ink-tertiary">Client (Sender)</span>
+                      <span className="text-ink-primary">GBLX...92A1</span>
+                    </div>
+                    <div className="flex justify-between border-b-2 border-dashed border-edge-neutral/50 pb-2">
+                      <span className="text-ink-tertiary">Dev (Recipient)</span>
+                      <span className="text-ink-primary">GA2F...4P9Q</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-end pt-2">
+                    <div className="text-[11px] md:text-xs text-ink-tertiary leading-tight font-bold">
+                      <div>NETWORK: STELLAR</div>
+                      <div>CONTRACT: SOROBAN_V2</div>
+                      <div className="text-accent mt-1 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-accent animate-pulse" /> VERIFIED
+                      </div>
+                    </div>
+                    <div className="w-12 h-12 border-[2px] border-edge-neutral p-1 opacity-50 relative overflow-hidden">
+                      {/* Stylized QR/Barcode representation */}
+                      <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-ink-primary)_2px,transparent_2px)] [background-size:6px_100%] opacity-80" />
+                      <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg-void)_2px,transparent_2px)] [background-size:100%_8px] opacity-90" />
+                    </div>
+                  </div>
                 </div>
               </m.div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+            </m.div>
+          </div>
+        </section>
 
-function CTASection() {
-  return (
-    <section className="max-w-5xl mx-auto px-margin-mobile md:px-margin-desktop py-28 text-center">
-      <Reveal>
-        <m.div
-          whileHover={{ boxShadow: "0 20px 60px rgba(5,105,109,0.12)" }}
-          className="bento-card py-20 px-8 rounded-2xl transition-shadow relative overflow-hidden"
-        >
-          {/* Background glow */}
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-[0.15] bg-[radial-gradient(ellipse_at_50%_120%,var(--color-primary)_0%,transparent_60%)]"
-          />
-          <div className="relative">
-            <h2 className="font-headline-lg text-headline-lg text-on-surface mb-6">
-              Ready to secure your next project?
+        {/* TRUST SECTION */}
+        <section className="w-full py-8 border-y-2 border-edge-neutral bg-bg-base">
+          <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop flex flex-wrap justify-center md:justify-between items-center gap-8 opacity-40 hover:opacity-100 transition-opacity duration-150">
+            {["Stellar", "Soroban", "Next.js", "React 19", "Tailwind CSS 4"].map(logo => (
+              <div key={logo} className="border-2 border-edge-neutral px-4 py-2 bg-bg-void">
+                <span className="text-sm font-mono-data font-bold uppercase tracking-widest text-ink-primary select-none">
+                  {logo}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* HOW IT WORKS SECTION */}
+        <section className="w-full py-32 px-margin-mobile md:px-margin-desktop max-w-6xl mx-auto relative">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
+            <h2 className="font-headline-lg text-4xl md:text-6xl font-extrabold uppercase tracking-tighter text-ink-primary leading-none">
+              The Protocol<br />
+              <span className="text-transparent bg-clip-text" style={{ WebkitTextStroke: '2px var(--color-ink-primary)' }}>In Action.</span>
             </h2>
-            <p className="text-on-surface-variant max-w-xl mx-auto mb-10 leading-relaxed">
-              Join thousands of freelancers and agencies using FreelancePay to guarantee payment and build client trust.
+            <p className="font-mono-data text-ink-secondary text-sm uppercase tracking-widest max-w-xs border-l-2 border-accent pl-4">
+              4 deterministic steps to guaranteed payment.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link
-                href="/auth"
-                className="bg-primary text-on-primary px-10 py-4 rounded-xl font-ui-label btn-primary-inset hover:bg-primary-hover active:scale-[0.98] transition-all inline-block"
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+            {[
+              { num: "01", title: "Connect", desc: "Link your identity.", code: `let wallet = "CONNECTED";\nawait require_auth();` },
+              { num: "02", title: "Fund", desc: "Lock capital in escrow.", code: `let status = "FUNDED";\nescrow.deposit(USDC, amount);` },
+              { num: "03", title: "Ship", desc: "Merge code to main.", code: `let work = "SUBMITTED";\ngithub.merge_pr();` },
+              { num: "04", title: "Unlock", desc: "Get paid instantly.", code: `let payout = "RELEASED";\nescrow.transfer(freelancer);` },
+            ].map((step, i) => (
+              <m.div 
+                key={step.num}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.15 }}
+                className="group relative bg-bg-void border-2 border-edge-neutral p-8 flex flex-col justify-between overflow-hidden shadow-neopop hover:-translate-y-2 hover:shadow-[12px_12px_0px_var(--color-accent)] transition-all duration-300"
               >
-                Launch App
-              </Link>
-              <Link
-                href="/demo"
-                className="bg-surface-container-highest text-on-surface px-10 py-4 rounded-xl font-ui-label hover:bg-surface-variant active:scale-[0.98] transition-all inline-block"
-              >
-                Book a Demo
+                {/* Huge Background Number */}
+                <span className="absolute -right-4 -bottom-8 text-[150px] font-headline-lg font-black text-ink-primary opacity-5 select-none z-0 tracking-tighter transition-transform duration-500 group-hover:scale-110">
+                  {step.num}
+                </span>
+
+                <div className="relative z-10 space-y-6">
+                  <div className="flex items-center gap-4">
+                    <span className="bg-ink-primary text-bg-base font-mono-data text-sm px-2 py-1 font-bold tracking-widest">
+                      STEP {step.num}
+                    </span>
+                    <h3 className="font-headline-lg text-3xl text-ink-primary font-bold uppercase tracking-tight">{step.title}</h3>
+                  </div>
+                  
+                  <p className="font-ui-label text-ink-secondary uppercase tracking-widest text-xs font-bold border-l-2 border-edge-neutral pl-3">
+                    {step.desc}
+                  </p>
+                  
+                  <div className="bg-bg-base border-2 border-edge-neutral p-4 relative group-hover:border-accent transition-colors duration-300">
+                    <div className="absolute top-0 right-0 w-3 h-3 border-l-2 border-b-2 border-edge-neutral bg-bg-void transition-colors duration-300 group-hover:border-accent" />
+                    <pre className="font-mono-data text-accent text-sm font-bold leading-relaxed whitespace-pre-wrap">
+                      <code>{step.code}</code>
+                    </pre>
+                  </div>
+                </div>
+              </m.div>
+            ))}
+          </div>
+        </section>
+
+        {/* PRICING SECTION */}
+        <section className="w-full py-32 bg-bg-base border-t-2 border-edge-neutral">
+          <div className="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop text-center space-y-8">
+            <h2 className="font-headline-lg text-4xl md:text-5xl font-bold uppercase tracking-tighter text-ink-primary">Pricing that makes sense.</h2>
+            <div className="flex justify-center items-baseline gap-2">
+              <span className="text-[120px] font-headline-lg font-bold text-accent leading-none tracking-tighter uppercase">0</span>
+              <span className="text-[48px] font-headline-lg font-bold text-ink-secondary uppercase tracking-tight">%</span>
+            </div>
+            <p className="font-ui-label text-xl font-bold text-ink-secondary uppercase tracking-widest">
+              You pay gas. We don't take a cut.
+            </p>
+            <div className="pt-8">
+              <Link href="/auth" className="neopop-button-teal px-10 py-5 inline-flex items-center justify-center font-ui-label text-sm font-bold uppercase tracking-widest gap-2">
+                Start Building Now
               </Link>
             </div>
           </div>
-        </m.div>
-      </Reveal>
-    </section>
-  );
-}
+        </section>
 
-export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-background font-body-base text-on-surface overflow-hidden">
-      <LandingNav />
-      <main>
-        <HeroSection />
-        <StatsSection />
-        <LogosSection />
-        <StepsSection />
-        <WhyStellarSection />
-        <CTASection />
       </main>
+
       <Footer />
     </div>
   );
 }
-

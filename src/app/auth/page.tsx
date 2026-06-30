@@ -1,180 +1,273 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useWallet } from "@/hooks/useWallet";
-import Link from "next/link";
-import dynamic from "next/dynamic";
 import { Redirect } from "@/components/Redirect";
-import { Loader2, ShieldCheck, Zap, Globe } from "lucide-react";
-import { m } from 'framer-motion';
+import { m, AnimatePresence } from "framer-motion";
+import { Loader2, CheckCircle2, User, Briefcase, ChevronRight, Wallet, ArrowRight, Code2, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 
-const CustomWalletModal = dynamic(
-  () => import("@/components/CustomWalletModal").then((mod) => mod.CustomWalletModal),
-  { ssr: false }
-);
+const variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 50 : -50,
+    opacity: 0
+  }),
+  center: {
+    zIndex: 1,
+    x: 0,
+    opacity: 1
+  },
+  exit: (direction: number) => ({
+    zIndex: 0,
+    x: direction < 0 ? 50 : -50,
+    opacity: 0
+  })
+};
 
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 24 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
-});
+export default function AuthWizard() {
+  const { isConnected, supportedWallets, connectWallet, publicKey } = useWallet();
+  const [step, setStep] = useState(1);
+  const [direction, setDirection] = useState(1);
+  const [role, setRole] = useState<"freelancer" | "client" | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
-const features = [
-  { icon: ShieldCheck, label: "Trustless Escrow", desc: "Soroban smart contracts hold funds until milestones are verified." },
-  { icon: Zap, label: "Instant Settlement", desc: "0.00001 XLM fees. Payouts clear in under 5 seconds globally." },
-  { icon: Globe, label: "180+ Countries", desc: "On/off ramps in every major market via Stellar's USDC liquidity." },
-];
-
-export default function AuthPage() {
-  const router = useRouter();
-  const { isConnected, isLoading, error, isModalOpen, openModal, closeModal, connectWallet, supportedWallets } = useWallet();
-
-  if (isConnected) {
+  // If already fully connected and wizard is done, or if just revisiting
+  // We'll let them go through the wizard if they are here, but if they hit step 4, we redirect.
+  if (isConnected && step === 1) {
+    // If they land on this page and are already connected, just send to dashboard
     return <Redirect to="/dashboard" />;
   }
 
+  const handleWalletSelect = async (id: string) => {
+    const success = await connectWallet(id);
+    if (success) {
+      setDirection(1);
+      setStep(2);
+    }
+  };
+
+  const handleRoleSelect = (selectedRole: "freelancer" | "client") => {
+    setRole(selectedRole);
+    setDirection(1);
+    setStep(3);
+  };
+
+  const handleProfileSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email) return;
+    setDirection(1);
+    setStep(4);
+    setIsFinalizing(true);
+  };
+
+  const goBack = () => {
+    if (step > 1) {
+      setDirection(-1);
+      setStep(step - 1);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background font-body-base text-on-surface overflow-hidden">
-      {/* Background radial glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(5,105,109,0.13) 0%, transparent 70%)",
-        }}
+    <div className="min-h-screen bg-bg-void flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* 3% Noise Texture */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
 
-      {/* Grid texture */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
-        style={{
-          backgroundImage: "linear-gradient(#05696d 1px, transparent 1px), linear-gradient(90deg, #05696d 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
+      <Link href="/" className="absolute top-8 left-8 z-20">
+        <Logo iconSize={32} textSize="text-xl" subTextSize="text-[8px]" />
+      </Link>
 
-      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
-        {/* ── Left: Branding panel ─────────────────────────────────── */}
-        <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-inverse-surface text-inverse-on-surface">
-          <m.div {...fadeUp(0)}>
-            <Logo iconSize={36} textSize="text-3xl" subTextSize="text-[10px]" />
-          </m.div>
-
-          <div className="my-auto py-16">
-            <m.div {...fadeUp(0.1)} className="inline-flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-md mb-8">
-              <span className="font-ui-label text-xs font-semibold text-on-surface-variant">Stellar Network</span>
-            </m.div>
-            <m.h2 {...fadeUp(0.2)} className="text-[42px] leading-[1.1] font-headline-lg mb-6">
-              Financial infrastructure for the{" "}
-              <span className="text-primary">decentralized</span> workforce.
-            </m.h2>
-            <m.p {...fadeUp(0.3)} className="text-outline-variant text-lg leading-relaxed max-w-md">
-              Programmable escrow on Stellar using trustless, code-enforced agreements.
-            </m.p>
-
-            <div className="mt-12 space-y-6">
-              {features.map((f, i) => (
-                <m.div key={f.label} {...fadeUp(0.35 + i * 0.08)} className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <f.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-ui-label font-bold text-inverse-on-surface text-sm">{f.label}</p>
-                    <p className="text-outline-variant text-sm mt-0.5">{f.desc}</p>
-                  </div>
-                </m.div>
-              ))}
-            </div>
-          </div>
-
-          <m.p {...fadeUp(0.6)} className="font-mono-data text-[10px] text-outline uppercase tracking-widest">
-            &copy; 2025 FreelancePay &middot; Built on Stellar
-          </m.p>
+      {/* Main Wizard Card */}
+      <div className="relative z-10 w-full max-w-[480px] card glass-panel rounded-[20px] overflow-hidden flex flex-col">
+        {/* Step Indicator */}
+        <div className="px-8 pt-8 pb-4 flex gap-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? "bg-accent" : "bg-bg-interactive"}`} />
+          ))}
         </div>
 
-        {/* ── Right: Auth panel ────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 lg:py-0">
-          {/* Mobile logo */}
-          <m.div {...fadeUp(0)} className="mb-12 lg:hidden">
-            <Logo iconSize={36} textSize="text-3xl" subTextSize="text-[10px]" />
-          </m.div>
-
-          <div className="w-full max-w-sm">
-            <m.div {...fadeUp(0.1)}>
-              <h1 className="font-headline-lg text-[32px] text-on-surface mb-2 text-center lg:text-left">
-                Connect your wallet
-              </h1>
-              <p className="text-on-surface-variant text-sm mb-10 text-center lg:text-left leading-relaxed">
-                Access your escrow contracts and payments securely via the Stellar network.
-              </p>
-            </m.div>
-
-            <m.div {...fadeUp(0.2)} className="space-y-4">
-              {/* Error */}
-              {error && (
-                <div className="p-3 rounded-lg bg-error-container border border-error/30 text-on-error-container text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button type="button"
-                id="connect-wallet-btn"
-                onClick={openModal}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-primary text-on-primary rounded-xl font-ui-label text-base font-bold btn-primary-inset hover:bg-primary-hover active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
+        <div className="relative flex-1 min-h-[400px] overflow-hidden px-8 pb-8">
+          <AnimatePresence custom={direction} mode="wait">
+            
+            {step === 1 && (
+              <m.div
+                key="step1"
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col h-full"
               >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-                    Connect Stellar Wallet
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-[1px] bg-outline-variant" />
-                <span className="font-mono-data text-[10px] text-outline uppercase tracking-widest">Secure &middot; Non-custodial</span>
-                <div className="flex-1 h-[1px] bg-outline-variant" />
-              </div>
-
-              <p className="text-center text-xs text-outline leading-relaxed">
-                FreelancePay never holds your private keys.{" "}
-                <Link href="/" className="text-primary hover:underline underline-offset-2 transition-colors">
-                  Back to home
-                </Link>
-              </p>
-            </m.div>
-
-            {/* Trust badges */}
-            <m.div {...fadeUp(0.35)} className="mt-10 grid grid-cols-3 gap-3">
-              {[
-                { label: "Non-custodial", icon: "lock" },
-                { label: "Open-source", icon: "code" },
-                { label: "Audited", icon: "verified" },
-              ].map((b) => (
-                <div key={b.label} className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-surface-container-low border border-outline-variant/50">
-                  <span className="material-symbols-outlined text-primary text-[20px]">{b.icon}</span>
-                  <span className="font-mono-data text-[9px] uppercase tracking-wider text-on-surface-variant text-center">{b.label}</span>
+                <h2 className="text-section-title text-ink-primary mb-2">Connect Wallet</h2>
+                <p className="text-ui-label text-ink-secondary mb-8">Select a Stellar wallet to continue.</p>
+                
+                <div className="space-y-3">
+                  {supportedWallets.map(wallet => (
+                    <button
+                      key={wallet.id}
+                      onClick={() => handleWalletSelect(wallet.id)}
+                      disabled={!wallet.isAvailable && !wallet.isPlatformWrapper}
+                      className="w-full card card-interactive flex items-center justify-between p-4 group text-left disabled:opacity-50 disabled:cursor-not-allowed border-2 border-transparent hover:border-accent hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-bg-interactive p-1 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all">
+                          <Image src={wallet.icon} alt={wallet.name} width={24} height={24} className="object-contain" />
+                        </div>
+                        <span className="font-bold text-ink-primary group-hover:text-accent transition-colors">{wallet.name}</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-ink-tertiary group-hover:text-accent transition-colors" />
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </m.div>
-          </div>
+              </m.div>
+            )}
+
+            {step === 2 && (
+              <m.div
+                key="step2"
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col h-full"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <button onClick={goBack} className="p-2 border-2 border-edge-neutral bg-bg-void hover:bg-bg-base hover:border-ink-secondary transition-colors text-ink-primary hover:scale-[1.05] active:scale-[0.95]">
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-section-title text-ink-primary">Select Role</h2>
+                </div>
+                <p className="text-ui-label text-ink-secondary mb-8">How will you use FreelancePay?</p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handleRoleSelect("client")}
+                    className="card card-interactive p-6 flex flex-col items-center text-center gap-4 hover:border-accent hover:bg-accent-glow transition-all"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-bg-interactive flex items-center justify-center text-ink-secondary">
+                      <Briefcase className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-ink-primary mb-1">Client</h3>
+                      <p className="text-[12px] text-ink-secondary">I want to hire and fund escrows.</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleRoleSelect("freelancer")}
+                    className="card card-interactive p-6 flex flex-col items-center text-center gap-4 hover:border-accent hover:bg-accent-glow transition-all"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-bg-interactive flex items-center justify-center text-ink-secondary">
+                      <Code2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-ink-primary mb-1">Freelancer</h3>
+                      <p className="text-[12px] text-ink-secondary">I want to work and get paid.</p>
+                    </div>
+                  </button>
+                </div>
+              </m.div>
+            )}
+
+            {step === 3 && (
+              <m.div
+                key="step3"
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col h-full"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <button onClick={goBack} className="p-2 border-2 border-edge-neutral bg-bg-void hover:bg-bg-base hover:border-ink-secondary transition-colors text-ink-primary hover:scale-[1.05] active:scale-[0.95]">
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-section-title text-ink-primary">Profile Basics</h2>
+                </div>
+                <p className="text-ui-label text-ink-secondary mb-8">Just a few details to get started.</p>
+                
+                <form onSubmit={handleProfileSubmit} className="flex flex-col gap-5 flex-1">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-ui-label text-ink-secondary">Display Name</label>
+                    <input 
+                      type="text" 
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      required
+                      placeholder="e.g. Satoshi Nakamoto"
+                      className="bg-bg-interactive border border-edge-neutral rounded-lg p-3 text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-ui-label text-ink-secondary">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      placeholder="satoshi@example.com"
+                      className="bg-bg-interactive border border-edge-neutral rounded-lg p-3 text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-all"
+                    />
+                  </div>
+                  
+                  <div className="mt-auto pt-8">
+                    <button type="submit" className="w-full neopop-button-teal text-ui-label px-5 py-4 font-bold flex items-center justify-center gap-2">
+                      Continue <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </form>
+              </m.div>
+            )}
+
+            {step === 4 && (
+              <m.div
+                key="step4"
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col items-center justify-center h-full min-h-[300px]"
+              >
+                {!isConnected ? (
+                   <div className="flex flex-col items-center gap-4">
+                     <Loader2 className="w-12 h-12 text-accent animate-spin" />
+                     <p className="text-ui-label text-ink-secondary">Connecting Wallet...</p>
+                   </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    <m.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <CheckCircle2 className="w-16 h-16 text-status-released" />
+                    </m.div>
+                    <h2 className="text-section-title text-ink-primary">All set!</h2>
+                    <p className="text-ui-label text-ink-secondary">Redirecting to dashboard...</p>
+                    {/* Trigger redirect */}
+                    <Redirect to="/dashboard" />
+                  </div>
+                )}
+              </m.div>
+            )}
+
+          </AnimatePresence>
         </div>
       </div>
-
-      <CustomWalletModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        wallets={supportedWallets}
-        onSelect={connectWallet}
-      />
     </div>
   );
 }
-
