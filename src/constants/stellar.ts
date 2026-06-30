@@ -8,7 +8,7 @@ export const STELLAR_CONFIG = {
   ammContractId: process.env.NEXT_PUBLIC_AMM_CONTRACT_ID || "",
   usdc: {
     code: "USDC",
-    issuer: process.env.NEXT_PUBLIC_USDC_ISSUER || "GBBD47IF6LWK7P7MDEVSCZA7CFYGLVOLOERFFTG22VMOOCCAAM111111",
+    issuer: process.env.NEXT_PUBLIC_USDC_ISSUER || "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
   },
   usdcContractId: process.env.NEXT_PUBLIC_USDC_CONTRACT_ID || "",
   anchorUrl: process.env.NEXT_PUBLIC_ANCHOR_URL || "https://testanchor.stellar.org",
