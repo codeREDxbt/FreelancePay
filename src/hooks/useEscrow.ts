@@ -164,9 +164,19 @@ export function useEscrow(contractId?: string) {
       const ms = onChain?.milestones?.[milestoneId];
       if (ms) {
         const statusVal = ms.status as any;
-        const tag = (typeof statusVal === 'string' ? statusVal : statusVal?.tag || "").toLowerCase();
+        let tag = "";
+        if (typeof statusVal === 'string') {
+          tag = statusVal;
+        } else if (typeof statusVal === 'number') {
+          const statuses = ["pending", "submitted", "approved", "released", "disputed"];
+          tag = statuses[statusVal] || "";
+        } else if (statusVal?.tag) {
+          tag = statusVal.tag;
+        }
+        tag = tag.toLowerCase();
+
         if (tag !== "pending") {
-          throw new Error("This milestone is not in a submittable state.");
+          throw new Error(`This milestone is not in a submittable state. Current state: ${tag}`);
         }
       }
 

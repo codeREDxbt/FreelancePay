@@ -54,8 +54,16 @@ export default function DashboardPage() {
 
     escrowState.milestones.forEach((onChainMilestone) => {
       const idx = Number(onChainMilestone.id);
-      const onChainStatus = onChainMilestone.status.tag.toLowerCase();
-
+      let onChainStatus = "";
+      const statusVal = onChainMilestone.status as any;
+      if (typeof statusVal === 'string') {
+        onChainStatus = statusVal.toLowerCase();
+      } else if (typeof statusVal === 'number') {
+        const statuses = ["pending", "submitted", "approved", "released", "disputed"];
+        onChainStatus = statuses[statusVal] || "";
+      } else if (statusVal?.tag) {
+        onChainStatus = statusVal.tag.toLowerCase();
+      }
       const localMilestone = syncedActive.milestones[idx];
       if (localMilestone && localMilestone.status !== onChainStatus) {
         hasMismatch = true;
