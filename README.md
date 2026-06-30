@@ -35,9 +35,9 @@ This repository contains **over 15+ meaningful commits**, showcasing continuous 
 ![Mobile Landing](./public/Mobile%20landing.png)
 
 ### Analytics & Monitoring
-![PostHog Analytics](./public/Analytics.png)
+![Analytics Dashboard](./public/Analytics.png)
 
-*Note: Analytics are integrated via PostHog to track user behavior and engagement.*
+*Note: The platform utilizes Vercel Analytics for traffic and performance monitoring, alongside PostHog for user behavior tracking.*
 
 ## User Feedback Summary
 
