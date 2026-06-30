@@ -4,7 +4,7 @@ export const STELLAR_CONFIG = {
   network: Networks.TESTNET,
   horizonUrl: process.env.NEXT_PUBLIC_HORIZON_URL || "https://horizon-testnet.stellar.org",
   sorobanRpcUrl: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
-  contractId: process.env.NEXT_PUBLIC_ESCROW_CONTRACT_ID || "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+  contractId: "CBGELQYWGMWDILFUXDD2P7244HLK2MRZH73LTA45TTKVU24QOKK74C2R",
   ammContractId: process.env.NEXT_PUBLIC_AMM_CONTRACT_ID || "",
   usdc: {
     code: "USDC",
