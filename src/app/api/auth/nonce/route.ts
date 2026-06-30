@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
 import { adminDb } from '@/lib/firebase/admin';
 import {
   NonceValidationError,
@@ -11,36 +10,41 @@ import {
 import { rateLimit, rateLimitHeaders } from '@/lib/auth/rate-limit';
 
 const NONCE_COLLECTION = 'auth_nonces';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-  const rl = rateLimit(req);
-  const headers = rateLimitHeaders(rl);
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests. Please try again later.' },
-      { status: 429, headers }
-    );
-  }
-
   try {
-    const nonce = randomBytes(32).toString('hex');
+    const rl = rateLimit(req);
+    const headers = rateLimitHeaders(rl);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers }
+      );
+    }
+
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const nonce = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    
     return NextResponse.json({ nonce }, { headers });
-  } catch {
+  } catch (err) {
+    console.error('Nonce GET error:', err);
     return NextResponse.json({ error: 'Failed to generate nonce' }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
-  const rl = rateLimit(req);
-  const headers = rateLimitHeaders(rl);
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests. Please try again later.' },
-      { status: 429, headers }
-    );
-  }
-
   try {
+    const rl = rateLimit(req);
+    const headers = rateLimitHeaders(rl);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers }
+      );
+    }
+
     const body = await req.json();
     assertValidNonceInputs(body);
 
