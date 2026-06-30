@@ -331,6 +331,15 @@ export function useWallet() {
         throw new Error("Wallet not connected");
       }
       try {
+        // Ensure Freighter recognizes the connection in this session before signing
+        // This removes the "not currently connected" orange warning in Freighter
+        try {
+          kit.setWallet("freighter");
+          await kit.fetchAddress();
+        } catch (e) {
+          console.warn("Pre-sign connection check failed", e);
+        }
+
         const result = await kit.signTransaction(xdr, { 
           networkPassphrase: process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? cachedNetworks.PUBLIC : cachedNetworks.TESTNET 
         });
