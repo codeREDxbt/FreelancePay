@@ -26,6 +26,7 @@ export default function ContractDetailPage() {
     isLoading: isEscrowLoading,
     flagDispute: onChainFlagDispute,
     resolveDispute: onChainResolveDispute,
+    cancelContract: onChainCancelContract,
     state: escrowState,
   } = contractAuto;
 
@@ -36,7 +37,11 @@ export default function ContractDetailPage() {
   const [isDisputeFlowOpen, setIsDisputeFlowOpen] = useState(false);
   const [isFlaggingDispute, setIsFlaggingDispute] = useState(false);
   const [isResolvingDispute, setIsResolvingDispute] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [resolveForm, setResolveForm] = useState({ releaseTo: "", amount: "" });
+
+  const contractIsAccepted = contract?.isAccepted !== false;
 
   useEffect(() => {
     if (!id) return;
@@ -149,6 +154,42 @@ export default function ContractDetailPage() {
       setIsResolvingDispute(false);
     }
   }, [contract, resolveForm, onChainResolveDispute, publicKey]);
+
+  const handleAcceptContract = async () => {
+    if (!contract) return;
+    setIsAccepting(true);
+    try {
+      const { acceptContract } = await import("@/lib/firebase/contracts");
+      await acceptContract(contract.id);
+      setContract(prev => prev ? { ...prev, isAccepted: true } : null);
+      toast.success("Contract accepted!");
+    } catch {
+      toast.error("Failed to accept contract.");
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
+  const handleCancelContract = async () => {
+    if (!contract || !publicKey) return;
+    if (!confirm("Are you sure you want to cancel this contract? This will refund the escrowed balance to your wallet.")) return;
+
+    setIsCancelling(true);
+    try {
+      toast.loading("Refunding escrowed balance to your wallet...", { id: "cancel" });
+      await onChainCancelContract();
+      
+      toast.loading("Deleting contract record...", { id: "cancel" });
+      const { deleteContract } = await import("@/lib/firebase/contracts");
+      await deleteContract(contract.id);
+      
+      toast.success("Contract cancelled and funds refunded.", { id: "cancel" });
+      router.push("/dashboard/contracts");
+    } catch (err) {
+      toast.error("Failed to cancel contract.", { id: "cancel" });
+      setIsCancelling(false);
+    }
+  };
 
   if (isFetching) {
     return (
@@ -332,6 +373,38 @@ export default function ContractDetailPage() {
                     <p className="text-xs font-ui-label text-ink-secondary">Awaiting resolution from the client.</p>
                   ) : null}
                 </div>
+              ) : !contractIsAccepted ? (
+                isClient ? (
+                  <div className="space-y-4">
+                    <div className="text-center p-6 border border-dashed border-status-disputed">
+                      <p className="font-ui-label text-sm text-status-disputed uppercase tracking-widest mb-1">Awaiting Acceptance</p>
+                      <p className="font-mono-data text-xs text-ink-secondary">Freelancer has not accepted this contract yet.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCancelContract}
+                      disabled={isCancelling}
+                      className="w-full py-4 bg-status-disputed/10 text-status-disputed border border-status-disputed/50 font-ui-label font-bold uppercase tracking-widest text-sm flex justify-center items-center gap-2 hover:bg-status-disputed/20 disabled:opacity-50"
+                    >
+                      {isCancelling ? <Loader2 className="w-5 h-5 animate-spin" /> : "Cancel Contract & Refund"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center p-6 border border-dashed border-accent">
+                      <p className="font-ui-label text-sm text-accent uppercase tracking-widest mb-1">New Contract Offer</p>
+                      <p className="font-mono-data text-xs text-ink-secondary">Review the milestones and accept to begin.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAcceptContract}
+                      disabled={isAccepting}
+                      className="neopop-button-teal w-full py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAccepting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Accept Contract"}
+                    </button>
+                  </div>
+                )
               ) : isClient ? (
                 <div className="space-y-6">
                   {currentStatus === "pending" ? (

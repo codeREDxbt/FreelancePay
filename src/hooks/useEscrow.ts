@@ -98,7 +98,7 @@ export function useEscrow(contractId?: string) {
     }
   }, [isConnected, client, sign, fetchState]);
 
-  const initializeEscrow = useCallback(async (
+  const fundContract = useCallback(async (
     freelancerAddress: string,
     amounts: number[],
     descriptions: string[]
@@ -259,15 +259,43 @@ export function useEscrow(contractId?: string) {
     }
   }, [isConnected, client, sign, fetchState]);
 
+  const cancelContract = useCallback(async () => {
+    if (!isConnected || !publicKey) {
+      toast.error("Wallet not connected");
+      throw new Error("Wallet not connected");
+    }
+    setIsFetching(true);
+    setError(null);
+    const toastId = toast.loading("Waiting for wallet signature...");
+    try {
+      const tx = await client.cancel_contract();
+      const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
+      const signedXdr = await sign(preparedXdr);
+      toast.loading("Submitting cancellation to Soroban...", { id: toastId });
+      const result = await submitSignedTransaction(signedXdr);
+      toast.success("Contract cancelled successfully!", { id: toastId });
+      await fetchState();
+      return result;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Failed to cancel contract";
+      setError(errMsg);
+      toast.error(`Transaction Failed: ${errMsg}`, { id: toastId });
+      throw err;
+    } finally {
+      setIsFetching(false);
+    }
+  }, [isConnected, client, publicKey, sign, fetchState]);
+
   return {
     state,
     isLoading: isFetching,
     error,
-    refresh: fetchState,
-    approveMilestone,
-    initializeEscrow,
+    refresh:    fetchState,
+    fundContract,
     submitMilestone,
+    approveMilestone,
     flagDispute,
     resolveDispute,
+    cancelContract,
   };
 }

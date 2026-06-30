@@ -4,43 +4,6 @@ import type { u32, i128 } from "@stellar/stellar-sdk/contract";
 export * from "@stellar/stellar-sdk";
 export * as contract from "@stellar/stellar-sdk/contract";
 export * as rpc from "@stellar/stellar-sdk/rpc";
-export type MilestoneStatus = {
-    tag: "Pending";
-    values: void;
-} | {
-    tag: "Submitted";
-    values: void;
-} | {
-    tag: "Approved";
-    values: void;
-} | {
-    tag: "Released";
-    values: void;
-} | {
-    tag: "Disputed";
-    values: void;
-};
-export interface Milestone {
-    amount: i128;
-    description: string;
-    id: u32;
-    status: MilestoneStatus;
-}
-export interface EscrowState {
-    admin: string;
-    client: string;
-    freelancer: string;
-    initialized: boolean;
-    is_closed: boolean;
-    is_disputed: boolean;
-    milestones: Array<Milestone>;
-    token: string;
-    total_amount: i128;
-}
-export type DataKey = {
-    tag: "Escrow";
-    values: void;
-};
 export declare const Errors: {
     1: {
         message: string;
@@ -67,7 +30,48 @@ export declare const Errors: {
         message: string;
     };
 };
+export type DataKey = {
+    tag: "Escrow";
+    values: void;
+};
+export interface Milestone {
+    amount: i128;
+    description: string;
+    id: u32;
+    status: MilestoneStatus;
+}
+export interface EscrowState {
+    admin: string;
+    client: string;
+    freelancer: string;
+    initialized: boolean;
+    is_closed: boolean;
+    is_disputed: boolean;
+    milestones: Array<Milestone>;
+    token: string;
+    total_amount: i128;
+}
+export type MilestoneStatus = {
+    tag: "Pending";
+    values: void;
+} | {
+    tag: "Submitted";
+    values: void;
+} | {
+    tag: "Approved";
+    values: void;
+} | {
+    tag: "Released";
+    values: void;
+} | {
+    tag: "Disputed";
+    values: void;
+};
 export interface Client {
+    /**
+     * Construct and simulate a get_state transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    get_state: (options?: MethodOptions) => Promise<AssembledTransaction<EscrowState>>;
     /**
      * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
@@ -78,6 +82,24 @@ export interface Client {
         milestone_amounts: Array<i128>;
         milestone_descriptions: Array<string>;
     }, options?: MethodOptions) => Promise<AssembledTransaction<u32>>;
+    /**
+     * Construct and simulate a flag_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    flag_dispute: ({ caller }: {
+        caller: string;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
+    /**
+     * Construct and simulate a cancel_contract transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    cancel_contract: (options?: MethodOptions) => Promise<AssembledTransaction<null>>;
+    /**
+     * Construct and simulate a resolve_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    resolve_dispute: ({ resolver, release_to, amount }: {
+        resolver: string;
+        release_to: string;
+        amount: i128;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
     /**
      * Construct and simulate a submit_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
@@ -90,24 +112,6 @@ export interface Client {
     approve_milestone: ({ milestone_id }: {
         milestone_id: u32;
     }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
-    /**
-     * Construct and simulate a flag_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-     */
-    flag_dispute: ({ caller }: {
-        caller: string;
-    }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
-    /**
-     * Construct and simulate a resolve_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-     */
-    resolve_dispute: ({ resolver, release_to, amount }: {
-        resolver: string;
-        release_to: string;
-        amount: i128;
-    }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
-    /**
-     * Construct and simulate a get_state transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-     */
-    get_state: (options?: MethodOptions) => Promise<AssembledTransaction<EscrowState>>;
 }
 export declare class Client extends ContractClient {
     readonly options: ContractClientOptions;
@@ -123,11 +127,12 @@ export declare class Client extends ContractClient {
     }): Promise<AssembledTransaction<T>>;
     constructor(options: ContractClientOptions);
     readonly fromJSON: {
+        get_state: (json: string) => AssembledTransaction<EscrowState>;
         initialize: (json: string) => AssembledTransaction<number>;
+        flag_dispute: (json: string) => AssembledTransaction<null>;
+        cancel_contract: (json: string) => AssembledTransaction<null>;
+        resolve_dispute: (json: string) => AssembledTransaction<null>;
         submit_milestone: (json: string) => AssembledTransaction<null>;
         approve_milestone: (json: string) => AssembledTransaction<null>;
-        flag_dispute: (json: string) => AssembledTransaction<null>;
-        resolve_dispute: (json: string) => AssembledTransaction<null>;
-        get_state: (json: string) => AssembledTransaction<EscrowState>;
     };
 }

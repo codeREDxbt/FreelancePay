@@ -9,6 +9,7 @@ import {
   getDocs,
   serverTimestamp,
   orderBy,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import type { Contract, MilestoneStatus } from "@/types";
@@ -236,5 +237,32 @@ export async function flagDispute(contractId: string) {
         : c
     );
     saveLocalContracts(updated);
+  }
+}
+
+export async function deleteContract(contractId: string) {
+  try {
+    const contractRef = doc(db, CONTRACTS_COLLECTION, contractId);
+    await deleteDoc(contractRef);
+  } catch (err) {
+    console.warn("Firebase failed, deleting from LocalStorage:", err);
+    let local = getLocalContracts();
+    local = local.filter(c => c.id !== contractId);
+    saveLocalContracts(local);
+  }
+}
+
+export async function acceptContract(contractId: string) {
+  try {
+    const contractRef = doc(db, CONTRACTS_COLLECTION, contractId);
+    await updateDoc(contractRef, {
+      isAccepted: true,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Firebase failed, updating LocalStorage:", err);
+    let local = getLocalContracts();
+    local = local.map(c => c.id === contractId ? { ...c, isAccepted: true, updatedAt: new Date() } : c);
+    saveLocalContracts(local);
   }
 }

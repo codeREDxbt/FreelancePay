@@ -222,6 +222,32 @@ impl EscrowContract {
         token_client.transfer(&env.current_contract_address(), &release_to, &amount);
     }
 
+    pub fn cancel_contract(env: Env) {
+        let mut state = Self::load_state(&env);
+        state.client.require_auth();
+
+        if state.is_closed {
+            err(&env, Error::InvalidStatus);
+        }
+
+        // Only allow cancellation if no milestone has progressed past Pending
+        for milestone in state.milestones.iter() {
+            if milestone.status != MilestoneStatus::Pending {
+                err(&env, Error::InvalidStatus);
+            }
+        }
+
+        let token_client = token::Client::new(&env, &state.token);
+        let contract_balance = token_client.balance(&env.current_contract_address());
+        
+        if contract_balance > 0 {
+            token_client.transfer(&env.current_contract_address(), &state.client, &contract_balance);
+        }
+
+        state.is_closed = true;
+        env.storage().persistent().set(&DataKey::Escrow, &state);
+    }
+
     pub fn get_state(env: Env) -> EscrowState {
         Self::load_state(&env)
     }

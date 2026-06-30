@@ -24,6 +24,7 @@ export interface Contract {
   milestones: Milestone[];
   isDisputed: boolean;
   isClosed: boolean;
+  isAccepted?: boolean;
   jobId?: string;
   applicationId?: string;
   createdAt: Date;

@@ -24,7 +24,7 @@ import { getTxExplorerUrl } from "@/lib/stellar/explorer";
 
 export default function DashboardPage() {
   const { isConnected, openModal, closeModal, isModalOpen, connectWallet, supportedWallets, publicKey } = useWallet();
-  const { state: escrowState, approveMilestone, submitMilestone, initializeEscrow, isLoading } = useEscrow();
+  const { state: escrowState, approveMilestone, submitMilestone, fundContract, isLoading } = useEscrow();
   const [state, setState] = useState({
     balanceRaw: 0,
     balanceError: null as string | null,
@@ -293,12 +293,12 @@ export default function DashboardPage() {
   }, [contracts, swapEvents]);
 
   const handleFundContract = useCallback((c: Contract) => {
-    initializeEscrow(
+    fundContract(
       c.freelancerWallet,
       [c.totalAmount],
       [c.description || "Milestone"]
     );
-  }, [initializeEscrow]);
+  }, [fundContract]);
 
   const contractCompletionPct = useMemo(() => {
     const total = contracts.length;

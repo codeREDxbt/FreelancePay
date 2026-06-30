@@ -16,7 +16,7 @@ function NewContractForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { publicKey } = useWallet();
-  const { initializeEscrow } = useEscrow();
+  const { fundContract } = useEscrow();
 
   const queryJobId = searchParams?.get("jobId") || "";
   const queryAppId = searchParams?.get("applicationId") || "";
@@ -63,7 +63,7 @@ function NewContractForm() {
       const milestoneDescriptions = formData.milestones.map(m => m.description);
       const totalAmount = milestoneAmounts.reduce((a, b) => a + b, 0);
 
-      const result = await initializeEscrow(
+      const result = await fundContract(
         formData.freelancerAddress,
         milestoneAmounts,
         milestoneDescriptions
@@ -80,6 +80,7 @@ function NewContractForm() {
         contractAddress: txHash,
         isDisputed: false,
         isClosed: false,
+        isAccepted: false,
         ...(formData.jobId ? { jobId: formData.jobId } : {}),
         ...(formData.applicationId ? { applicationId: formData.applicationId } : {}),
         milestones: formData.milestones.map((m, idx) => {
