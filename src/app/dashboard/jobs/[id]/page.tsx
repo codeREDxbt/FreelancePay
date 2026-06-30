@@ -3,8 +3,8 @@
 import React, { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
-import { getJob, getJobApplications, applyToJob } from "@/lib/firebase/jobs";
+import { ArrowLeft, Loader2, ArrowRight, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import { getJob, getJobApplications, applyToJob, deleteJob } from "@/lib/firebase/jobs";
 import { useWallet } from "@/hooks/useWallet";
 import { ErrorBoundary } from "@/components/providers/error-boundary";
 import type { Job, JobApplication } from "@/types";
@@ -74,11 +74,24 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
       const apps = await getJobApplications(jobId);
       setApplications(apps);
       setProposal("");
+      setProposal("");
       setBidAmount("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to apply");
     } finally {
       setIsApplying(false);
+    }
+  };
+
+  const handleDeleteJob = async () => {
+    if (!window.confirm("Are you sure you want to delete this job?")) return;
+    try {
+      setIsLoading(true);
+      await deleteJob(jobId);
+      router.push("/dashboard/jobs");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete job");
+      setIsLoading(false);
     }
   };
 
@@ -113,9 +126,20 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
         
         {/* Left Pane: Job Details & Application Form */}
         <div className="flex-1 p-8 lg:p-16 pb-24 border-r-2 border-edge-neutral">
-          <Link href="/dashboard/jobs" className="flex items-center gap-2 text-ink-tertiary hover:text-ink-primary transition-colors font-ui-label text-sm font-bold uppercase tracking-widest mb-12 w-fit">
-            <ArrowLeft className="w-4 h-4" /> Back to Jobs
-          </Link>
+          <div className="flex items-center justify-between mb-12">
+            <Link href="/dashboard/jobs" className="flex items-center gap-2 text-ink-tertiary hover:text-ink-primary transition-colors font-ui-label text-sm font-bold uppercase tracking-widest w-fit">
+              <ArrowLeft className="w-4 h-4" /> Back to Jobs
+            </Link>
+            
+            {isOwner && (
+              <button 
+                onClick={handleDeleteJob}
+                className="flex items-center gap-2 text-status-disputed hover:bg-status-disputed/10 border border-transparent hover:border-status-disputed/20 px-3 py-1.5 transition-colors font-ui-label text-sm font-bold uppercase tracking-widest"
+              >
+                <Trash2 className="w-4 h-4" /> Delete Job
+              </button>
+            )}
+          </div>
 
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-4">

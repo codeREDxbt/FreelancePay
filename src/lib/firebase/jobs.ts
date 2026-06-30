@@ -9,6 +9,7 @@ import {
   getDocs,
   serverTimestamp,
   orderBy,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import type { Job, JobApplication } from "@/types";
@@ -112,6 +113,16 @@ export async function updateJobStatus(id: string, status: "open" | "closed") {
     console.warn("Firebase failed, checking LocalStorage:", err);
     const local = getLocalJobs();
     saveLocalJobs(local.map(j => j.id === id ? { ...j, status, updatedAt: new Date() } : j));
+  }
+}
+
+export async function deleteJob(id: string) {
+  try {
+    await deleteDoc(doc(db, JOBS_COLLECTION, id));
+  } catch (err) {
+    console.warn("Firebase failed, checking LocalStorage:", err);
+    const local = getLocalJobs();
+    saveLocalJobs(local.filter(j => j.id !== id));
   }
 }
 
