@@ -1,19 +1,44 @@
-import { sorobanServer } from "./client";
+import {
+  TransactionBuilder,
+  type Transaction,
+  type FeeBumpTransaction,
+  rpc,
+} from "@stellar/stellar-sdk";
+import { sorobanServer, horizonServer } from "./client";
+import { STELLAR_CONFIG } from "@/constants/stellar";
 
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1000;
 
+export type SignedTransaction = Transaction | FeeBumpTransaction;
+
+function parseSignedXdr(signedXdr: string): SignedTransaction {
+  return TransactionBuilder.fromXDR(signedXdr, STELLAR_CONFIG.network);
+}
+
+/**
+ * For Soroban contract calls (escrow auto-binding, etc.) the binding
+ * returns a Transaction whose envelope does NOT yet carry the
+ * SorobanTransactionData extension or auth-vec populated by the network's
+ * prepare/simulate path. Without that step the host rejects the XDR with
+ * `txMalformed` (-16). Call this before handing the XDR to Freighter/page-
+ * signer and then to submitSignedTransaction.
+ */
+export async function prepareSorobanTx(unsignedXdr: string): Promise<string> {
+  const tx = TransactionBuilder.fromXDR(unsignedXdr, STELLAR_CONFIG.network) as Transaction;
+  const prepared = await sorobanServer.prepareTransaction(tx);
+  return prepared.toXDR();
+}
+
 export async function submitSignedTransaction(signedXdr: string) {
-  // The on-the-wire `sendTransaction` accepts the XDR envelope directly,
-  // but the TS type still narrows to `Transaction | FeeBumpTransaction`.
-  // Pass the raw XDR — the Soroban host accepts it as-is.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await (sorobanServer as any).sendTransaction(signedXdr);
+  const tx = parseSignedXdr(signedXdr);
+
+  const result = await sorobanServer.sendTransaction(tx);
   if (result.status === "ERROR") {
     throw new Error(`Transaction failed: ${JSON.stringify(result.errorResult)}`);
   }
 
-  const poll = async (attempt: number): Promise<any> => {
+  const poll = async (attempt: number): Promise<rpc.Api.GetTransactionResponse> => {
     if (attempt >= MAX_POLL_ATTEMPTS) {
       throw new Error(`Transaction polling timed out after ${MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS / 1000}s`);
     }
@@ -24,8 +49,19 @@ export async function submitSignedTransaction(signedXdr: string) {
       return poll(attempt + 1);
     }
 
-    if (getResult.status === "FAILED") {
-      throw new Error("Transaction execution failed");
+    if (getResult.status === rpc.Api.GetTransactionStatus.FAILED) {
+      const details: Record<string, unknown> = {
+        status: getResult.status,
+      };
+      if ("resultXdr" in getResult) {
+        details.resultXdr = getResult.resultXdr;
+      }
+      if ("hash" in getResult) {
+        details.hash = (getResult as { hash: string }).hash;
+      }
+      throw new Error(
+        `Transaction execution failed: ${JSON.stringify(details)}`
+      );
     }
 
     return getResult;
@@ -34,15 +70,11 @@ export async function submitSignedTransaction(signedXdr: string) {
   return poll(0);
 }
 
-const usdcFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
-function formatUSDC(amount: number): string {
-  return usdcFormatter.format(amount);
-}
-
-function shortenAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+export async function submitHorizonTransaction(signedXdr: string) {
+  const tx = parseSignedXdr(signedXdr);
+  const result = await horizonServer.submitTransaction(tx);
+  if (result && "successful" in result && result.successful === false) {
+    throw new Error(`Classic transaction failed (tx_failed) for hash ${result.hash}`);
+  }
+  return result;
 }

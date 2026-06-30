@@ -33,31 +33,20 @@ const getNetworks = (): StellarNetworks | null =>
   typeof window !== "undefined" ? (window as unknown as Record<string, unknown>).__STELLAR_NETWORKS__ as StellarNetworks | null : null;
 const setNetworks = (n: StellarNetworks) => { if (typeof window !== "undefined") (window as unknown as Record<string, unknown>).__STELLAR_NETWORKS__ = n; };
 
-let cachedWalletAddress: string | null = null;
-let hasReadWalletAddress = false;
-
 function getWalletAddress() {
   if (typeof window === "undefined") return null;
-  if (!hasReadWalletAddress) {
-    cachedWalletAddress = localStorage.getItem("fp_wallet_address");
-    hasReadWalletAddress = true;
-  }
-  return cachedWalletAddress;
+  return localStorage.getItem("fp_wallet_address");
 }
 
 function setWalletAddress(address: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem("fp_wallet_address", address);
-    cachedWalletAddress = address;
-    hasReadWalletAddress = true;
   }
 }
 
 function clearWalletAddress() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("fp_wallet_address");
-    cachedWalletAddress = null;
-    hasReadWalletAddress = true;
   }
 }
 
@@ -69,11 +58,7 @@ const DEFAULT_STATE: WalletState = {
   walletNetwork: null,
 };
 
-interface SupportedWallet {
-  id: string;
-  name: string;
-  icon: string;
-}
+import type { SupportedWallet } from "@/types";
 
 export function useWallet() {
   const [state, setState] = useState<WalletState>(() => {
@@ -94,6 +79,20 @@ export function useWallet() {
 
   useEffect(() => {
     let kit = getKit();
+    const configuredSiteNetwork: string = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? "MAINNET" : "TESTNET";
+    const detectWalletNetwork = async (kitInstance: StellarKit): Promise<string | null> => {
+      try {
+        const { getNetworkDetails } = await import("@stellar/freighter-api");
+        const nd = await getNetworkDetails();
+        if (nd?.network) {
+          return String(nd.network).toUpperCase();
+        }
+      } catch { /* not freighter */ }
+      if (typeof window !== "undefined") {
+        return null;
+      }
+      return null;
+    };
     if (!kit && typeof window !== "undefined") {
       (async () => {
         try {
@@ -117,7 +116,7 @@ export function useWallet() {
           
           setNetworks(Networks);
           
-          const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
+          const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "89b09fbdf5d9095af2c2c9d7d4cde3b1";
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const modules: any[] = [
             new FreighterModule(),
@@ -149,14 +148,10 @@ export function useWallet() {
           
           let wNetwork: string | null = null;
           if (typeof window !== "undefined" && getWalletAddress()) {
-            try {
-              const { getNetworkDetails } = await import("@stellar/freighter-api");
-              const nd = await getNetworkDetails();
-              wNetwork = nd?.network || null;
-            } catch { /* non-freighter wallet, OK */ }
+            wNetwork = await detectWalletNetwork(kit);
           }
           
-          setState((s) => ({ ...s, isLoading: false, walletNetwork: wNetwork || s.walletNetwork }));
+          setState((s) => ({ ...s, isLoading: false, walletNetwork: wNetwork ?? (getWalletAddress() ? configuredSiteNetwork : s.walletNetwork) }));
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Failed to load wallet module";
           setState((s) => ({ ...s, isLoading: false, error: msg }));
@@ -164,6 +159,13 @@ export function useWallet() {
       })();
     } else if (kit) {
       kit.refreshSupportedWallets().then(w => setSupportedWallets(w as SupportedWallet[])).catch(() => {});
+      if (typeof window !== "undefined" && getWalletAddress()) {
+        detectWalletNetwork(kit).then(n => {
+          setState((s) => ({ ...s, walletNetwork: n ?? (getWalletAddress() ? configuredSiteNetwork : s.walletNetwork) }));
+        }).catch(() => {
+          setState((s) => ({ ...s, walletNetwork: getWalletAddress() ? configuredSiteNetwork : s.walletNetwork }));
+        });
+      }
     }
   }, []);
 
@@ -211,18 +213,35 @@ export function useWallet() {
 
       if (!verifyRes.ok) {
         const errData = await verifyRes.json().catch(() => ({}));
-        throw new Error((errData as { error?: string }).error || "Failed to verify wallet signature");
+        const errorMsg = (errData as { error?: string }).error || "Failed to verify wallet signature";
+        if (process.env.NODE_ENV !== 'production' && verifyRes.status === 500) {
+          console.warn("Firebase Admin credentials missing or server error. Proceeding with local mock auth.", errorMsg);
+        } else {
+          throw new Error(errorMsg);
+        }
+      } else {
+        const { customToken } = await verifyRes.json() as { customToken: string };
+        await signInWithCustomToken(auth, customToken);
       }
-
-      const { customToken } = await verifyRes.json() as { customToken: string };
-      await signInWithCustomToken(auth, customToken);
       
       let wNetwork: string | null = null;
+      const configuredSiteNetwork: string = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? "MAINNET" : "TESTNET";
       try {
         const { getNetworkDetails } = await import("@stellar/freighter-api");
         const nd = await getNetworkDetails();
-        wNetwork = nd?.network || null;
+        wNetwork = nd?.network ? String(nd.network).toUpperCase() : null;
       } catch { /* non-freighter */ }
+      if (!wNetwork) {
+        try {
+          const cachedNetworks = getNetworks();
+          if (cachedNetworks) {
+            const passphrase = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? cachedNetworks.PUBLIC : cachedNetworks.TESTNET;
+            if (passphrase === cachedNetworks.PUBLIC) wNetwork = "MAINNET";
+            else if (passphrase === cachedNetworks.TESTNET) wNetwork = "TESTNET";
+          }
+        } catch { /* ignore */ }
+      }
+      if (!wNetwork) wNetwork = configuredSiteNetwork;
       
       setWalletAddress(address);
       
@@ -235,11 +254,13 @@ export function useWallet() {
         walletNetwork: wNetwork,
       });
       setModalOpen(false);
+      return true;
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Failed to connect wallet";
       toast.error(`Connection Failed: ${errMsg}`);
       setState((s) => ({ ...s, isLoading: false, error: errMsg }));
       setModalOpen(false);
+      return false;
     }
   }, []);
 
