@@ -31,9 +31,14 @@ export function Footer() {
             </div>
             <div className="flex flex-col gap-4">
               <p className="font-mono-data text-[10px] uppercase text-ink-tertiary tracking-widest mb-1">Resources</p>
-              {["Help Centre", "Documentation", "Terms of Service", "Privacy Policy"].map((link) => (
-                <Link key={link} className="text-ui-label text-ink-secondary hover:text-ink-primary hover:underline decoration-accent underline-offset-4 transition-all" href={link === "Help Centre" ? "/help" : "/"}>
-                  {link}
+              {[
+                { name: "Help Centre", href: "/help" },
+                { name: "Documentation", href: "/docs" },
+                { name: "Terms of Service", href: "/terms" },
+                { name: "Privacy Policy", href: "/privacy" }
+              ].map((link) => (
+                <Link key={link.name} className="text-ui-label text-ink-secondary hover:text-ink-primary hover:underline decoration-accent underline-offset-4 transition-all" href={link.href}>
+                  {link.name}
                 </Link>
               ))}
             </div>
