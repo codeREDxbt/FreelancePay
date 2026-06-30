@@ -6,7 +6,7 @@
 **GitHub:** [codeREDxbt](https://github.com/codeREDxbt)
 
 ## Live Demo & Links
-- **Live Demo:** [freelancepay-live.vercel.app](https://freelancepayxbt.vercel.app)
+- **Live Demo:** [freelancepayxbt.vercel.app](https://freelancepayxbt.vercel.app)
 - **Demo Video:** [Watch on Google Drive](https://drive.google.com/file/d/1hqha3FRoAfrMUZ23pEreXLHKh4nNEfsM/view?usp=sharing)
 - **Contract Address (Soroban Testnet):** `CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU`
 - **Proof of 10+ Wallet Interactions:** [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU)
