@@ -63,6 +63,9 @@ FreelancePay/
 ### Analytics & Monitoring
 ![Analytics Dashboard](./public/Analytics.png)
 
+### Performance (Lighthouse)
+![Lighthouse Score](./public/Lighthouse.png)
+
 *Note: The platform utilizes Vercel Analytics for traffic and performance monitoring, alongside PostHog for user behavior tracking.*
 
 ## User Feedback Summary
