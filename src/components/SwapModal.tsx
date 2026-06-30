@@ -161,6 +161,25 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
     return (dest * (1 - slippage)).toFixed(7);
   }, [quote, slippage]);
 
+  const ammInsufficientLiquidity = useMemo(() => {
+    if (quote?.source !== "reference_rate" || !ammPool?.isInitialized) return false;
+    const amountIn = Number(amount);
+    if (!amountIn || amountIn <= 0) return false;
+
+    // A = XLM, B = USDC based on the UI convention
+    const reserveIn = direction === "buy_usdc" ? ammPool.reserveA : ammPool.reserveB;
+    const reserveOut = direction === "buy_usdc" ? ammPool.reserveB : ammPool.reserveA;
+
+    if (reserveIn === 0 || reserveOut === 0) return true;
+
+    // Constant product formula: out = (reserveOut * in) / (reserveIn + in)
+    // We add a tiny 0.3% fee deduction typical for AMMs: in_after_fee = in * 0.997
+    const amountInWithFee = amountIn * 0.997;
+    const ammOutput = (reserveOut * amountInWithFee) / (reserveIn + amountInWithFee);
+
+    return ammOutput < Number(destMin);
+  }, [quote, ammPool, amount, direction, destMin]);
+
   const priceDisplay = useMemo(() => {
     if (!quote) return null;
     const src = Number(quote.sourceAmount);
@@ -561,12 +580,24 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                       Insufficient Balance
                     </p>
                   )}
+                  {ammInsufficientLiquidity && Number(amount) <= Number(fromBalance) && (
+                    <p className="text-xs text-error font-ui-label text-center mb-2 font-bold uppercase tracking-widest">
+                      Insufficient Pool Liquidity
+                    </p>
+                  )}
                   <m.button
                     type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={handleReview}
-                    disabled={!quote || !amount || Number(amount) <= 0 || isQuoteLoading || Number(amount) > Number(fromBalance)}
+                    disabled={
+                      !quote || 
+                      !amount || 
+                      Number(amount) <= 0 || 
+                      isQuoteLoading || 
+                      Number(amount) > Number(fromBalance) ||
+                      ammInsufficientLiquidity
+                    }
                     className="w-full neopop-button-teal py-4 font-ui-label text-sm font-bold uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                   >
                     Review Swap
