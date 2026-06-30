@@ -22,9 +22,18 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
     return () => unsubscribe();
   }, [contractId]);
 
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    if (!containerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    
+    // Check if we are near the bottom (within 100px)
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+    if (isInitialLoad.current || isNearBottom) {
+      containerRef.current.scrollTop = scrollHeight;
+      isInitialLoad.current = false;
     }
   }, [messages]);
 

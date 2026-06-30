@@ -54,9 +54,10 @@ export default function ContractsPage() {
     }
     if (statusFilter !== "all") {
       result = result.filter(c => {
-        if (statusFilter === "active") return !c.isClosed && !c.isDisputed;
+        const isCompleted = c.milestones && c.milestones.length > 0 && c.milestones.every(m => m.status === "released" || m.status === "approved");
+        if (statusFilter === "active") return !c.isClosed && !c.isDisputed && !isCompleted;
         if (statusFilter === "disputed") return c.isDisputed;
-        if (statusFilter === "closed") return c.isClosed;
+        if (statusFilter === "closed") return c.isClosed || isCompleted;
         return true;
       });
     }

@@ -8,10 +8,10 @@ test.describe('Landing Page', () => {
     await expect(page).toHaveTitle(/FreelancePay/i, { timeout: 30000 });
     
     // Check if the main heading is visible
-    await expect(page.getByRole('heading', { name: /Programmable trust/i })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('heading', { name: /SHIP CODE/i })).toBeVisible({ timeout: 30000 });
     
     // Check if the Initialize Application button is visible and links to /auth
-    const initAppBtn = page.getByRole('link', { name: /Initialize Application/i });
+    const initAppBtn = page.getByRole('link', { name: /Deploy Contract/i });
     await expect(initAppBtn).toBeVisible();
     await expect(initAppBtn).toHaveAttribute('href', '/auth');
   });

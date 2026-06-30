@@ -103,6 +103,7 @@ export default function ContractDetailPage() {
         };
       });
       await updateMilestoneStatus(contract.id, activeMilestoneIndex, "approved");
+      router.refresh();
     } catch { /* toast already shown by hook */ }
   };
 
