@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Send, MessageSquare } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import { subscribeToMessages, sendMessage, ChatMessage } from "@/lib/firebase/chat";
+import { toast } from "sonner";
 
 interface ChatWidgetProps {
   contractId: string;
@@ -13,6 +14,7 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
   const { publicKey } = useWallet();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,11 +41,20 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!publicKey || !newMessage.trim()) return;
+    if (!publicKey || !newMessage.trim() || isSending) return;
     
     const text = newMessage;
     setNewMessage(""); // Optimistic clear
-    await sendMessage(contractId, publicKey, text);
+    setIsSending(true);
+    try {
+      await sendMessage(contractId, publicKey, text);
+    } catch {
+      // Restore the message so the user can retry
+      setNewMessage(text);
+      toast.error("Failed to send message. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -94,13 +105,13 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            disabled={!publicKey}
+            disabled={!publicKey || isSending}
             placeholder={publicKey ? "Type a message..." : "Connect wallet to chat"}
             className="flex-1 bg-transparent border-2 border-edge-neutral focus:border-accent outline-none px-4 py-3 font-ui-label text-sm transition-colors placeholder:text-ink-tertiary"
           />
           <button
             type="submit"
-            disabled={!publicKey || !newMessage.trim()}
+            disabled={!publicKey || !newMessage.trim() || isSending}
             className="bg-ink-primary hover:bg-ink-primary/90 text-bg-base px-6 py-3 border-2 border-ink-primary transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
           >
             <Send className="w-4 h-4" />

@@ -9,6 +9,18 @@ service cloud.firestore {
       allow update: if request.auth != null && (request.auth.uid == resource.data.clientWallet || request.auth.uid == resource.data.freelancerWallet);
 
       allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == get(/databases/$(database)/documents/contracts/$(contractId)).data.clientWallet ||
+          request.auth.uid == get(/databases/$(database)/documents/contracts/$(contractId)).data.freelancerWallet
+        );
+        allow create: if request.auth != null && (
+          request.auth.uid == get(/databases/$(database)/documents/contracts/$(contractId)).data.clientWallet ||
+          request.auth.uid == get(/databases/$(database)/documents/contracts/$(contractId)).data.freelancerWallet
+        ) && request.auth.uid == request.resource.data.senderWallet;
+        allow update, delete: if false;
+      }
     }
 
     match /feedback/{feedbackId} {

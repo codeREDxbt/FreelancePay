@@ -78,16 +78,25 @@ export default function ContractDetailPage() {
 
     setIsSubmittingWork(true);
     try {
+      // On-chain submission: may succeed, return null (demo mode), or throw
+      // If it throws, the useEscrow hook already shows a toast.error
       await onChainSubmitMilestone(activeMilestoneIndex);
+
+      // On-chain succeeded (or demo mode) — update Firestore to "submitted"
+      // so the client sees the work and can approve it
       await updateMilestoneStatus(contract.id, activeMilestoneIndex, "submitted", deliverableUrl);
       setContract(prev => prev ? {
         ...prev,
         milestones: prev.milestones.map((m, i) => i === activeMilestoneIndex ? { ...m, status: "submitted" as const, deliverableUrl } : m)
       } : null);
       toast.success("Work submitted for review!");
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error?.message || "Failed to submit work");
+    } catch {
+      // The useEscrow hook already showed a toast for on-chain errors.
+      // Only show our own error if Firestore update failed (on-chain succeeded
+      // but Firestore didn't). We can't easily distinguish here, but the
+      // on-chain hook re-throws non-demo errors, so reaching here means
+      // either a real on-chain failure (toast already shown) or Firestore failure.
+      toast.error("Failed to submit work. Please try again.");
     } finally {
       setIsSubmittingWork(false);
     }

@@ -18,27 +18,12 @@ export interface ChatMessage {
 export async function sendMessage(contractId: string, senderWallet: string, text: string) {
   if (!text.trim()) return;
   
-  try {
-    const messagesRef = collection(db, "contracts", contractId, "messages");
-    await addDoc(messagesRef, {
-      senderWallet,
-      text: text.trim(),
-      createdAt: serverTimestamp(),
-    });
-  } catch (err) {
-    console.warn("Failed to send message to Firebase:", err);
-    // Optional fallback: LocalStorage mock chat
-    const key = `freelancepay_mock_chat_${contractId}`;
-    const stored = localStorage.getItem(key);
-    const msgs = stored ? JSON.parse(stored) : [];
-    msgs.push({
-      id: "local_" + Date.now(),
-      senderWallet,
-      text: text.trim(),
-      createdAt: Date.now(),
-    });
-    localStorage.setItem(key, JSON.stringify(msgs));
-  }
+  const messagesRef = collection(db, "contracts", contractId, "messages");
+  await addDoc(messagesRef, {
+    senderWallet,
+    text: text.trim(),
+    createdAt: serverTimestamp(),
+  });
 }
 
 export function subscribeToMessages(contractId: string, callback: (messages: ChatMessage[]) => void) {

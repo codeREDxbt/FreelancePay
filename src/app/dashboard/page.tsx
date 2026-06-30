@@ -43,10 +43,25 @@ export default function DashboardPage() {
   const syncContracts = useCallback(async (userContracts: Contract[]) => {
     if (!escrowState || userContracts.length === 0) return userContracts;
 
+    // Only sync if the on-chain state actually has milestones
+    // An uninitialized or empty escrow state should not overwrite Firestore
+    if (!escrowState.milestones || escrowState.milestones.length === 0) {
+      return userContracts;
+    }
+
     const activeContract = userContracts.find(
       c => c.contractAddress && escrowState
     );
     if (!activeContract?.milestones) return userContracts;
+
+    // Define valid status progression order — a status can only move forward
+    const STATUS_ORDER: Record<string, number> = {
+      pending: 0,
+      submitted: 1,
+      approved: 2,
+      released: 3,
+      disputed: 4,
+    };
 
     let hasMismatch = false;
     const syncedContracts = [...userContracts];
@@ -64,8 +79,21 @@ export default function DashboardPage() {
       } else if (statusVal?.tag) {
         onChainStatus = statusVal.tag.toLowerCase();
       }
+
+      // Skip if we couldn't determine a valid on-chain status
+      if (!onChainStatus || !(onChainStatus in STATUS_ORDER)) return;
+
       const localMilestone = syncedActive.milestones[idx];
-      if (localMilestone && localMilestone.status !== onChainStatus) {
+      if (!localMilestone) return;
+
+      // Only sync if:
+      // 1. The statuses actually differ
+      // 2. The on-chain status is a valid FORWARD progression from the local status
+      //    (prevents jumping from "pending" to "approved", skipping client review)
+      const localOrder = STATUS_ORDER[localMilestone.status] ?? -1;
+      const onChainOrder = STATUS_ORDER[onChainStatus] ?? -1;
+
+      if (localMilestone.status !== onChainStatus && onChainOrder > localOrder && onChainOrder - localOrder === 1) {
         hasMismatch = true;
         syncedActive.milestones[idx] = { ...localMilestone, status: onChainStatus as Contract["milestones"][number]["status"] };
         import("@/lib/firebase/contracts").then(m => m.updateMilestoneStatus(activeContract.id, idx, onChainStatus as Parameters<typeof m.updateMilestoneStatus>[2]));
