@@ -31,7 +31,12 @@ if (typeof window !== "undefined") {
 }
 
 
-
+export const networks = {
+  testnet: {
+    networkPassphrase: "Test SDF Network ; September 2015",
+    contractId: "CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU",
+  }
+} as const
 
 export const Errors = {
   1: {message:"AlreadyInitialized"},
@@ -44,7 +49,7 @@ export const Errors = {
   8: {message:"NotAParty"}
 }
 
-export type DataKey = {tag: "Escrow", values: void};
+export type DataKey = {tag: "Escrow", values: readonly [string]};
 
 
 export interface Milestone {
@@ -73,37 +78,37 @@ export interface Client {
   /**
    * Construct and simulate a get_state transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  get_state: (options?: MethodOptions) => Promise<AssembledTransaction<EscrowState>>
+  get_state: ({project_id}: {project_id: string}, options?: MethodOptions) => Promise<AssembledTransaction<EscrowState>>
 
   /**
    * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  initialize: ({client, freelancer, token, milestone_amounts, milestone_descriptions}: {client: string, freelancer: string, token: string, milestone_amounts: Array<i128>, milestone_descriptions: Array<string>}, options?: MethodOptions) => Promise<AssembledTransaction<u32>>
+  initialize: ({project_id, client, freelancer, token, milestone_amounts, milestone_descriptions}: {project_id: string, client: string, freelancer: string, token: string, milestone_amounts: Array<i128>, milestone_descriptions: Array<string>}, options?: MethodOptions) => Promise<AssembledTransaction<u32>>
 
   /**
    * Construct and simulate a flag_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  flag_dispute: ({caller}: {caller: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  flag_dispute: ({project_id, caller}: {project_id: string, caller: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a cancel_contract transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  cancel_contract: (options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  cancel_contract: ({project_id}: {project_id: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a resolve_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  resolve_dispute: ({resolver, release_to, amount}: {resolver: string, release_to: string, amount: i128}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  resolve_dispute: ({project_id, resolver, release_to, amount}: {project_id: string, resolver: string, release_to: string, amount: i128}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a submit_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  submit_milestone: ({milestone_id}: {milestone_id: u32}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  submit_milestone: ({project_id, milestone_id}: {project_id: string, milestone_id: u32}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a approve_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  approve_milestone: ({milestone_id}: {milestone_id: u32}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  approve_milestone: ({project_id, milestone_id}: {project_id: string, milestone_id: u32}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
 }
 export class Client extends ContractClient {
@@ -124,16 +129,16 @@ export class Client extends ContractClient {
   constructor(public readonly options: ContractClientOptions) {
     super(
       new ContractSpec([ "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",
-        "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",
+        "AAAAAAAAAAAAAAAJZ2V0X3N0YXRlAAAAAAAAAQAAAAAAAAAKcHJvamVjdF9pZAAAAAAAEAAAAAEAAAfQAAAAC0VzY3Jvd1N0YXRlAA==",
+        "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAAAQAAAAEAAAAAAAAABkVzY3JvdwAAAAAAAQAAABA=",
+        "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAABgAAAAAAAAAKcHJvamVjdF9pZAAAAAAAEAAAAAAAAAAGY2xpZW50AAAAAAATAAAAAAAAAApmcmVlbGFuY2VyAAAAAAATAAAAAAAAAAV0b2tlbgAAAAAAABMAAAAAAAAAEW1pbGVzdG9uZV9hbW91bnRzAAAAAAAD6gAAAAsAAAAAAAAAFm1pbGVzdG9uZV9kZXNjcmlwdGlvbnMAAAAAA+oAAAAQAAAAAQAAAAQ=",
         "AAAAAQAAAAAAAAAAAAAACU1pbGVzdG9uZQAAAAAAAAQAAAAAAAAABmFtb3VudAAAAAAACwAAAAAAAAALZGVzY3JpcHRpb24AAAAAEAAAAAAAAAACaWQAAAAAAAQAAAAAAAAABnN0YXR1cwAAAAAH0AAAAA9NaWxlc3RvbmVTdGF0dXMA",
-        "AAAAAAAAAAAAAAAMZmxhZ19kaXNwdXRlAAAAAQAAAAAAAAAGY2FsbGVyAAAAAAATAAAAAA==",
+        "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",
-        "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",
+        "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",
+        "AAAAAAAAAAAAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAQAAAAAAAAACnByb2plY3RfaWQAAAAAABAAAAAAAAAACHJlc29sdmVyAAAAEwAAAAAAAAAKcmVsZWFzZV90bwAAAAAAEwAAAAAAAAAGYW1vdW50AAAAAAALAAAAAA==",
+        "AAAAAAAAAAAAAAAQc3VibWl0X21pbGVzdG9uZQAAAAIAAAAAAAAACnByb2plY3RfaWQAAAAAABAAAAAAAAAADG1pbGVzdG9uZV9pZAAAAAQAAAAA",
+        "AAAAAAAAAAAAAAARYXBwcm92ZV9taWxlc3RvbmUAAAAAAAACAAAAAAAAAApwcm9qZWN0X2lkAAAAAAAQAAAAAAAAAAxtaWxlc3RvbmVfaWQAAAAEAAAAAA==",
         "AAAAAgAAAAAAAAAAAAAAD01pbGVzdG9uZVN0YXR1cwAAAAAFAAAAAAAAAAAAAAAHUGVuZGluZwAAAAAAAAAAAAAAAAlTdWJtaXR0ZWQAAAAAAAAAAAAAAAAAAAhBcHByb3ZlZAAAAAAAAAAAAAAACFJlbGVhc2VkAAAAAAAAAAAAAAAIRGlzcHV0ZWQ=" ]),
       options
     )

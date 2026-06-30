@@ -330,6 +330,7 @@ export default function DashboardPage() {
 
   const handleFundContract = useCallback((c: Contract) => {
     fundContract(
+      c.id,
       c.freelancerWallet,
       [c.totalAmount],
       [c.description || "Milestone"]

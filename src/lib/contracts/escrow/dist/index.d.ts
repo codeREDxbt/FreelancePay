@@ -4,6 +4,12 @@ import type { u32, i128 } from "@stellar/stellar-sdk/contract";
 export * from "@stellar/stellar-sdk";
 export * as contract from "@stellar/stellar-sdk/contract";
 export * as rpc from "@stellar/stellar-sdk/rpc";
+export declare const networks: {
+    readonly testnet: {
+        readonly networkPassphrase: "Test SDF Network ; September 2015";
+        readonly contractId: "CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU";
+    };
+};
 export declare const Errors: {
     1: {
         message: string;
@@ -32,7 +38,7 @@ export declare const Errors: {
 };
 export type DataKey = {
     tag: "Escrow";
-    values: void;
+    values: readonly [string];
 };
 export interface Milestone {
     amount: i128;
@@ -71,11 +77,14 @@ export interface Client {
     /**
      * Construct and simulate a get_state transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    get_state: (options?: MethodOptions) => Promise<AssembledTransaction<EscrowState>>;
+    get_state: ({ project_id }: {
+        project_id: string;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<EscrowState>>;
     /**
      * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    initialize: ({ client, freelancer, token, milestone_amounts, milestone_descriptions }: {
+    initialize: ({ project_id, client, freelancer, token, milestone_amounts, milestone_descriptions }: {
+        project_id: string;
         client: string;
         freelancer: string;
         token: string;
@@ -85,17 +94,21 @@ export interface Client {
     /**
      * Construct and simulate a flag_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    flag_dispute: ({ caller }: {
+    flag_dispute: ({ project_id, caller }: {
+        project_id: string;
         caller: string;
     }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
     /**
      * Construct and simulate a cancel_contract transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    cancel_contract: (options?: MethodOptions) => Promise<AssembledTransaction<null>>;
+    cancel_contract: ({ project_id }: {
+        project_id: string;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
     /**
      * Construct and simulate a resolve_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    resolve_dispute: ({ resolver, release_to, amount }: {
+    resolve_dispute: ({ project_id, resolver, release_to, amount }: {
+        project_id: string;
         resolver: string;
         release_to: string;
         amount: i128;
@@ -103,13 +116,15 @@ export interface Client {
     /**
      * Construct and simulate a submit_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    submit_milestone: ({ milestone_id }: {
+    submit_milestone: ({ project_id, milestone_id }: {
+        project_id: string;
         milestone_id: u32;
     }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
     /**
      * Construct and simulate a approve_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    approve_milestone: ({ milestone_id }: {
+    approve_milestone: ({ project_id, milestone_id }: {
+        project_id: string;
         milestone_id: u32;
     }, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
 }
