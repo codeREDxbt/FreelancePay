@@ -136,7 +136,7 @@ export function useEscrow(contractId?: string) {
       return result;
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Failed to initialize escrow";
-      if (errMsg.includes("AlreadyInitialized")) {
+      if (errMsg.includes("AlreadyInitialized") || errMsg.includes("data:1") || errMsg.includes("data: 1")) {
         toast.dismiss(toastId);
         toast.success("Contract is already initialized on-chain. Syncing state...");
         await fetchState();

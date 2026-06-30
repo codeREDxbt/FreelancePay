@@ -57,7 +57,6 @@
       "@firebase/util",
       "@reown/appkit",
       "@sentry/cli",
-      "@stellar/stellar-sdk",
       "blake-hash",
       "bufferutil",
       "core-js",
