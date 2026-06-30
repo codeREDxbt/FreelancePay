@@ -34,9 +34,9 @@ export function rateLimit(req: Request, maxRequests = MAX_REQUESTS, windowMs = W
   return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt };
 }
 
-export function rateLimitHeaders(result: { remaining: number; resetAt: number }): Record<string, string> {
-  return {
-    "X-RateLimit-Remaining": String(result.remaining),
-    "X-RateLimit-Reset": String(result.resetAt),
-  };
+export function rateLimitHeaders(result: { remaining: number; resetAt: number }): Headers {
+  const headers = new Headers();
+  headers.set("X-RateLimit-Remaining", String(result.remaining));
+  headers.set("X-RateLimit-Reset", String(result.resetAt));
+  return headers;
 }

@@ -54,7 +54,7 @@ describe("rateLimit", () => {
 describe("rateLimitHeaders", () => {
   it("returns correct headers", () => {
     const headers = rateLimitHeaders({ remaining: 3, resetAt: 1704067200000 });
-    expect(headers["X-RateLimit-Remaining"]).toBe("3");
-    expect(headers["X-RateLimit-Reset"]).toBe("1704067200000");
+    expect(headers.get("X-RateLimit-Remaining")).toBe("3");
+    expect(headers.get("X-RateLimit-Reset")).toBe("1704067200000");
   });
 });
