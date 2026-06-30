@@ -2,16 +2,16 @@ import { Networks, Asset } from "@stellar/stellar-sdk";
 
 export const STELLAR_CONFIG = {
   network: Networks.TESTNET,
-  horizonUrl: process.env.NEXT_PUBLIC_HORIZON_URL!,
-  sorobanRpcUrl: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL!,
-  contractId: process.env.NEXT_PUBLIC_ESCROW_CONTRACT_ID!,
+  horizonUrl: process.env.NEXT_PUBLIC_HORIZON_URL || "https://horizon-testnet.stellar.org",
+  sorobanRpcUrl: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
+  contractId: process.env.NEXT_PUBLIC_ESCROW_CONTRACT_ID || "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
   ammContractId: process.env.NEXT_PUBLIC_AMM_CONTRACT_ID || "",
   usdc: {
     code: "USDC",
-    issuer: process.env.NEXT_PUBLIC_USDC_ISSUER!,
+    issuer: process.env.NEXT_PUBLIC_USDC_ISSUER || "GBBD47IF6LWK7P7MDEVSCZA7CFYGLVOLOERFFTG22VMOOCCAAM111111",
   },
   usdcContractId: process.env.NEXT_PUBLIC_USDC_CONTRACT_ID || "",
-  anchorUrl: process.env.NEXT_PUBLIC_ANCHOR_URL!,
+  anchorUrl: process.env.NEXT_PUBLIC_ANCHOR_URL || "https://testanchor.stellar.org",
 };
 
 export function getUSDCSACAddress(): string {
