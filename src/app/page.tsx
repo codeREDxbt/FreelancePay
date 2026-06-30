@@ -97,7 +97,7 @@ export default function Home() {
                 <Link href="/auth" className="group relative px-10 py-5 bg-accent text-bg-base font-headline-lg font-bold text-xl uppercase tracking-widest border-4 border-ink-primary hover:-translate-y-1 hover:-translate-x-1 shadow-[8px_8px_0px_var(--color-ink-primary)] hover:shadow-[12px_12px_0px_var(--color-ink-primary)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-[4px_4px_0px_var(--color-ink-primary)] flex items-center gap-3">
                   Deploy Contract <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
                 </Link>
-                <Link href="/docs" className="px-8 py-5 border-4 border-edge-neutral bg-bg-base font-headline-lg font-bold text-xl uppercase tracking-widest text-ink-primary hover:bg-ink-primary hover:text-bg-base hover:-translate-y-1 hover:-translate-x-1 shadow-[8px_8px_0px_var(--color-edge-neutral)] transition-all flex items-center gap-2">
+                <Link href="#features" className="px-8 py-5 border-4 border-edge-neutral bg-bg-base font-headline-lg font-bold text-xl uppercase tracking-widest text-ink-primary hover:bg-ink-primary hover:text-bg-base hover:-translate-y-1 hover:-translate-x-1 shadow-[8px_8px_0px_var(--color-edge-neutral)] transition-all flex items-center gap-2">
                   <Code2 className="w-6 h-6" /> Specs
                 </Link>
               </m.div>
@@ -182,7 +182,7 @@ export default function Home() {
         </section>
 
         {/* HOW IT WORKS SECTION */}
-        <section className="w-full py-32 px-margin-mobile md:px-margin-desktop max-w-6xl mx-auto relative">
+        <section id="features" className="w-full py-32 px-margin-mobile md:px-margin-desktop max-w-6xl mx-auto relative">
           <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
             <h2 className="font-headline-lg text-4xl md:text-6xl font-extrabold uppercase tracking-tighter text-ink-primary leading-none">
               The Protocol<br />

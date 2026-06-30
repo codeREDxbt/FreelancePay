@@ -202,13 +202,33 @@ export function useWallet() {
       }
 
       const nonceRes = await fetch('/api/auth/nonce');
-      const { nonce } = await nonceRes.json();
+      const nonceText = await nonceRes.text();
+      let nonce: string;
+      try {
+        const parsed = JSON.parse(nonceText);
+        if (!nonceRes.ok) throw new Error(parsed.error || "Failed to fetch nonce");
+        nonce = parsed.nonce;
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          throw new Error(`Server returned non-JSON for nonce (Status ${nonceRes.status})`);
+        }
+        throw e;
+      }
 
-      await fetch('/api/auth/nonce', {
+      const postNonceRes = await fetch('/api/auth/nonce', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicKey: address, nonce }),
       });
+      if (!postNonceRes.ok) {
+        const text = await postNonceRes.text();
+        try {
+          const parsed = JSON.parse(text);
+          throw new Error(parsed.error || "Failed to store nonce");
+        } catch {
+          throw new Error(`Failed to store nonce (Status ${postNonceRes.status})`);
+        }
+      }
 
       let signature: string;
       if (id === 'freighter') {
@@ -232,8 +252,14 @@ export function useWallet() {
       });
 
       if (!verifyRes.ok) {
-        const errData = await verifyRes.json().catch(() => ({}));
-        const errorMsg = (errData as { error?: string }).error || "Failed to verify wallet signature";
+        const text = await verifyRes.text();
+        let errorMsg = "Failed to verify wallet signature";
+        try {
+          const errData = JSON.parse(text);
+          if (errData.error) errorMsg = errData.error;
+        } catch {
+          errorMsg = `Server error ${verifyRes.status}: ${text.substring(0, 50).trim()}...`;
+        }
         if (process.env.NODE_ENV !== 'production' && verifyRes.status === 500) {
           console.warn("Firebase Admin credentials missing or server error. Proceeding with local mock auth.", errorMsg);
         } else {
