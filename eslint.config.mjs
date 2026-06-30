@@ -22,7 +22,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "node_modules_old/**",
     "node_modules_old_trash/**",
-    "src/lib/contracts/escrow/**"
+    "src/lib/contracts/escrow/**",
+    "functions/lib/**"
   ]),
 ]);
 

@@ -25,26 +25,23 @@ function NewContractForm() {
   const queryDescription = searchParams?.get("description") || "";
   const queryAmount = searchParams?.get("amount") || "";
 
-  const [formData, setFormData] = useState<NewContractFormData>({
-    title: queryTitle,
-    description: queryDescription,
-    freelancerAddress: queryFreelancer,
-    jobId: queryJobId,
-    applicationId: queryAppId,
-    milestones: [{ description: queryDescription || "", amount: queryAmount || "", deliverableUrl: "" }],
+  const [formData, setFormData] = useState<NewContractFormData>(() => {
+    const isInvalid = queryFreelancer && (!queryFreelancer.startsWith("G") || queryFreelancer.length !== 56);
+    return {
+      title: queryTitle,
+      description: queryDescription,
+      freelancerAddress: isInvalid ? "" : queryFreelancer,
+      jobId: queryJobId,
+      applicationId: queryAppId,
+      milestones: [{ description: queryDescription || "", amount: queryAmount || "", deliverableUrl: "" }],
+    };
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Validate freelancer address if provided via query
-    if (queryFreelancer) {
-      if (!queryFreelancer.startsWith("G") || queryFreelancer.length !== 56) {
-        setError("Invalid freelancer address in URL parameters.");
-        setFormData(prev => ({ ...prev, freelancerAddress: "" }));
-      }
-    }
-  }, [queryFreelancer]);
+  const [error, setError] = useState<string | null>(() => {
+    return queryFreelancer && (!queryFreelancer.startsWith("G") || queryFreelancer.length !== 56)
+      ? "Invalid freelancer address in URL parameters."
+      : null;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
