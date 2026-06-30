@@ -34,6 +34,9 @@ This repository contains **over 15+ meaningful commits**, showcasing continuous 
 ### Mobile Responsive Design
 ![Mobile Landing](./public/Mobile%20landing.png)
 
+### Analytics & Monitoring
+![PostHog Analytics](./public/Analytics.png)
+
 *Note: Analytics are integrated via PostHog to track user behavior and engagement.*
 
 ## User Feedback Summary
