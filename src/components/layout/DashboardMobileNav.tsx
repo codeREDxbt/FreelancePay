@@ -9,14 +9,14 @@ export function DashboardMobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant flex md:hidden items-center justify-around z-40 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-bg-base border-t-2 border-edge-neutral flex md:hidden items-center justify-around z-40 px-2 pb-safe">
       {navItems.slice(0, 2).map((item) => {
         const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center gap-1 transition-colors ${isActive ? "text-primary" : "text-on-surface-variant"}`}
+            className={`flex flex-col items-center gap-1 transition-colors ${isActive ? "text-accent" : "text-ink-secondary hover:text-ink-primary"}`}
           >
             <item.icon className="w-5 h-5" />
             <span className="text-[10px] font-ui-label">{item.label}</span>
@@ -25,7 +25,7 @@ export function DashboardMobileNav() {
       })}
       <Link
         href="/dashboard/contracts/new"
-        className="w-12 h-12 bg-primary rounded-full -mt-8 shadow-lg shadow-primary/20 flex items-center justify-center text-on-primary btn-primary-inset hover:scale-105 active:scale-95 transition-transform"
+        className="w-12 h-12 bg-ink-primary rounded-full -mt-8 border-2 border-bg-base shadow-[0_4px_10px_rgba(0,0,0,0.3)] flex items-center justify-center text-bg-base hover:scale-105 active:scale-95 transition-transform"
       >
         <Plus className="w-6 h-6" />
       </Link>
@@ -35,7 +35,7 @@ export function DashboardMobileNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center gap-1 transition-colors ${isActive ? "text-primary" : "text-on-surface-variant"}`}
+            className={`flex flex-col items-center gap-1 transition-colors ${isActive ? "text-accent" : "text-ink-secondary hover:text-ink-primary"}`}
           >
             <item.icon className="w-5 h-5" />
             <span className="text-[10px] font-ui-label">{item.label}</span>
@@ -44,7 +44,7 @@ export function DashboardMobileNav() {
       })}
       <Link
         href="/dashboard/account"
-        className="flex flex-col items-center gap-1 text-on-surface-variant"
+        className="flex flex-col items-center gap-1 text-ink-secondary hover:text-ink-primary transition-colors"
       >
         <User className="w-5 h-5" />
         <span className="text-[10px] font-ui-label">Account</span>

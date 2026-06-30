@@ -41,12 +41,12 @@ export function LandingNav() {
   };
 
   return (
-    <nav className="w-full top-0 sticky z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/30">
+    <nav className="w-full top-0 sticky z-50 bg-bg-void/90 backdrop-blur-md border-b divider">
       <div className="flex justify-between items-center h-16 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
         <m.div
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center"
         >
           <Link href="/" className="flex items-center">
@@ -57,38 +57,38 @@ export function LandingNav() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
           className="hidden md:flex gap-8 items-center"
         >
-          <Link href="/features" className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors duration-200">
+          <Link href="/features" className="text-ink-secondary hover:text-ink-primary text-ui-label transition-colors">
             Features
           </Link>
-          <Link href="/network" className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors duration-200">
+          <Link href="/network" className="text-ink-secondary hover:text-ink-primary text-ui-label transition-colors">
             Network
           </Link>
-          <Link href="/pricing" className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors duration-200">
+          <Link href="/pricing" className="text-ink-secondary hover:text-ink-primary text-ui-label transition-colors">
             Pricing
           </Link>
         </m.div>
 
         <m.div
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-          className="flex items-center gap-4"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          className="flex items-center gap-6"
         >
           <button type="button" 
             onClick={toggleDarkMode} 
-            className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors"
+            className="text-ink-secondary hover:text-ink-primary transition-colors"
           >
             {mounted ? (isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />) : <div className="w-5 h-5" />}
           </button>
-          <Link href="/auth" className="hidden sm:block font-ui-label text-sm text-on-surface-variant hover:text-primary transition-colors">
+          <Link href="/auth" className="hidden sm:block text-ui-label text-ink-secondary hover:text-ink-primary transition-colors">
             Login
           </Link>
           <Link
             href="/auth"
-            className="bg-primary text-on-primary font-ui-label text-sm px-5 py-2.5 rounded-lg btn-primary-inset hover:bg-primary-hover active:scale-95 transition-all"
+            className="neopop-button-teal text-ui-label px-5 py-2.5 flex items-center justify-center font-bold"
           >
             Launch App
           </Link>
@@ -97,4 +97,3 @@ export function LandingNav() {
     </nav>
   );
 }
-

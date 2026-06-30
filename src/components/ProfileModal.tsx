@@ -43,7 +43,7 @@ export function ProfileModal({ isOpen, onClose, initialUsername, initialPfp, onS
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-bg-void/90"
             onClick={onClose}
           />
           <m.div
@@ -51,15 +51,15 @@ export function ProfileModal({ isOpen, onClose, initialUsername, initialPfp, onS
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="relative w-full max-w-sm bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-xl"
+            className="relative w-full max-w-sm bg-bg-base border-2 border-edge-neutral overflow-hidden shadow-neopop"
           >
-            <div className="flex items-center justify-between p-5 border-b border-outline-variant bg-surface-container-low">
-              <h3 className="font-headline-lg text-lg text-on-background">
+            <div className="flex items-center justify-between p-5 border-b-2 border-edge-neutral bg-bg-base">
+              <h3 className="font-headline-lg text-xl font-bold uppercase tracking-tight text-ink-primary">
                 Edit Profile
               </h3>
               <button type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-colors"
+                className="p-1.5 border-2 border-transparent hover:border-edge-neutral text-ink-secondary hover:bg-bg-void hover:text-ink-primary transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -75,7 +75,7 @@ export function ProfileModal({ isOpen, onClose, initialUsername, initialPfp, onS
                     onChange={handleImageUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="w-24 h-24 rounded-full border border-outline-variant bg-surface-container-highest overflow-hidden flex items-center justify-center group-hover:border-primary transition-colors">
+                  <div className="w-24 h-24 rounded-none border-2 border-edge-neutral bg-bg-void overflow-hidden flex items-center justify-center group-hover:border-accent transition-colors shadow-neopop">
                     {pfpUrl ? (
                       <Image 
                         src={pfpUrl} 
@@ -88,15 +88,15 @@ export function ProfileModal({ isOpen, onClose, initialUsername, initialPfp, onS
                       <Camera className="w-8 h-8 text-on-surface-variant" />
                     )}
                   </div>
-                  <div className="absolute bottom-0 right-0 bg-primary text-on-primary p-1.5 rounded-full border-2 border-surface-container-lowest shadow-sm pointer-events-none">
+                  <div className="absolute -bottom-2 -right-2 bg-accent text-bg-base p-2 border-2 border-edge-neutral shadow-[4px_4px_0px_var(--color-edge-neutral)] pointer-events-none">
                     <Upload className="w-4 h-4" />
                   </div>
                 </div>
-                <p className="font-ui-label text-sm text-on-surface-variant">Upload Avatar</p>
+                <p className="font-ui-label text-xs uppercase tracking-widest font-bold text-ink-secondary mt-2">Upload Avatar</p>
               </div>
 
               <div className="mb-6">
-                <label htmlFor="username" className="block font-ui-label text-sm font-semibold text-on-background mb-2">
+                <label htmlFor="username" className="block font-ui-label text-xs uppercase tracking-widest font-bold text-ink-primary mb-2">
                   Username
                 </label>
                 <input
@@ -106,13 +106,13 @@ export function ProfileModal({ isOpen, onClose, initialUsername, initialPfp, onS
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. Satoshi"
                   maxLength={20}
-                  className="w-full p-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-base text-on-background placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full p-4 bg-bg-void border-2 border-edge-neutral font-mono-data text-ink-primary font-bold placeholder:text-ink-tertiary focus:outline-none focus:border-accent transition-all"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-primary text-on-primary rounded-lg font-ui-label text-base font-semibold btn-primary-inset hover:bg-primary-hover transition-colors"
+                className="w-full neopop-button-teal py-4 font-ui-label text-sm font-bold uppercase tracking-widest"
               >
                 Save Changes
               </button>

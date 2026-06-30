@@ -5,6 +5,7 @@ import { m, AnimatePresence } from "framer-motion";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useWallet } from "@/hooks/useWallet";
+import { CheckCircle2, Star, MessageSquare, X } from "lucide-react";
 
 export function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,11 +13,11 @@ export function FeedbackWidget() {
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const { address } = useWallet();
+  const { publicKey } = useWallet();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!address) {
+    if (!publicKey) {
       alert("Please connect your wallet first");
       return;
     }
@@ -24,7 +25,7 @@ export function FeedbackWidget() {
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, "feedback"), {
-        walletAddress: address,
+        walletAddress: publicKey,
         rating,
         comment,
         createdAt: serverTimestamp(),
@@ -45,28 +46,26 @@ export function FeedbackWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-24 md:bottom-6 right-6 z-50">
       <AnimatePresence>
         {isOpen && (
           <m.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="absolute bottom-16 right-0 w-80 bg-surface-container-high border border-outline-variant/30 rounded-xl shadow-2xl p-6 mb-4"
+            className="absolute bottom-16 right-0 w-80 bg-bg-base border-2 border-edge-neutral shadow-neopop p-6 mb-4"
           >
             {submitted ? (
               <div className="text-center py-6">
-                <span className="material-symbols-outlined text-4xl text-primary mb-2 block">
-                  check_circle
-                </span>
-                <h3 className="font-headline-sm text-on-surface">Thank you!</h3>
-                <p className="text-on-surface-variant text-sm mt-1">
+                <CheckCircle2 className="w-10 h-10 text-accent mx-auto mb-2" />
+                <h3 className="font-headline-sm font-bold text-ink-primary uppercase tracking-widest">Thank you!</h3>
+                <p className="text-ink-secondary text-sm mt-1 font-mono-data">
                   Your feedback helps us improve.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <h3 className="font-headline-sm text-on-surface mb-4">
+                <h3 className="font-ui-label font-bold text-ink-primary mb-4 uppercase tracking-widest text-sm">
                   Send Feedback
                 </h3>
                 <div className="flex gap-2 mb-6">
@@ -75,11 +74,11 @@ export function FeedbackWidget() {
                       key={star}
                       type="button"
                       onClick={() => setRating(star)}
-                      className={`material-symbols-outlined text-2xl transition-colors ${
-                        star <= rating ? "text-primary" : "text-outline-variant"
+                      className={`transition-colors ${
+                        star <= rating ? "text-accent" : "text-edge-neutral hover:text-ink-tertiary"
                       }`}
                     >
-                      star
+                      <Star className="w-6 h-6" fill={star <= rating ? "currentColor" : "none"} />
                     </button>
                   ))}
                 </div>
@@ -87,21 +86,21 @@ export function FeedbackWidget() {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Tell us what you think..."
-                  className="w-full bg-surface p-3 rounded-lg border border-outline-variant/30 text-on-surface text-sm mb-4 focus:outline-none focus:border-primary transition-colors min-h-[100px] resize-none"
+                  className="w-full bg-transparent p-3 border-2 border-edge-neutral text-ink-primary text-sm mb-4 focus:outline-none focus:border-accent transition-colors min-h-[100px] resize-none font-ui-label placeholder:text-ink-tertiary"
                   required
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+                    className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-ink-secondary hover:text-ink-primary transition-colors border-2 border-transparent hover:border-edge-neutral"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || rating === 0}
-                    className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2"
+                    className="bg-ink-primary text-bg-base px-6 py-2 border-2 border-ink-primary text-xs font-bold uppercase tracking-widest hover:bg-ink-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
                   >
                     {isSubmitting ? "Sending..." : "Send"}
                   </button>
@@ -114,12 +113,10 @@ export function FeedbackWidget() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-primary text-on-primary w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-primary-hover hover:scale-105 active:scale-95 transition-all"
+        className="bg-ink-primary text-bg-base border-2 border-ink-primary w-14 h-14 flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[2px_2px_0px_0px_rgba(20,20,20,1)] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all"
         aria-label="Feedback"
       >
-        <span className="material-symbols-outlined">
-          {isOpen ? "close" : "forum"}
-        </span>
+        {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
       </button>
     </div>
   );
