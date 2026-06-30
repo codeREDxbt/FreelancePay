@@ -92,6 +92,11 @@ export async function getSwapQuote(params: {
       publicKey: params.publicKey,
     });
     if (horizonQuote) return horizonQuote;
+    
+    // If we specifically requested Horizon (fallback) and it found no paths, 
+    // don't fall back to the reference rate, because the user specifically wants the orderbook.
+    if (params.forceHorizon) return null;
+    
     return buildReferenceQuote({
       sourceAsset: params.sourceAsset,
       sourceAmount: params.sourceAmount,
@@ -106,6 +111,9 @@ export async function getSwapQuote(params: {
     publicKey: params.publicKey,
   });
   if (receiveQuote) return receiveQuote;
+  
+  if (params.forceHorizon) return null;
+
   return buildReferenceQuote({
     sourceAsset: params.sourceAsset,
     sourceAmount: params.sourceAmount,

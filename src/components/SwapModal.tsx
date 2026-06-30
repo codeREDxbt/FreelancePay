@@ -587,7 +587,12 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                       Insufficient Balance
                     </p>
                   )}
-                  {ammInsufficientLiquidity && Number(amount) <= Number(fromBalance) && (
+                  {forceHorizon && !quote && !isQuoteLoading && amount && Number(amount) > 0 && (
+                    <p className="text-xs text-error font-ui-label text-center mb-2 font-bold uppercase tracking-widest">
+                      No liquidity on Testnet Orderbooks
+                    </p>
+                  )}
+                  {ammInsufficientLiquidity && !forceHorizon && Number(amount) <= Number(fromBalance) && (
                     <div className="text-center mb-2">
                       <p className="text-xs text-error font-ui-label font-bold uppercase tracking-widest mb-1">
                         Insufficient Pool Liquidity
