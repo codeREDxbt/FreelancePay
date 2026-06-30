@@ -39,7 +39,7 @@ pub struct EscrowState {
 
 #[contracttype]
 pub enum DataKey {
-    Escrow,
+    Escrow(String),
 }
 
 #[contracterror]
@@ -69,6 +69,7 @@ fn err(env: &Env, e: Error) {
 impl EscrowContract {
     pub fn initialize(
         env: Env,
+        project_id: String,
         client: Address,
         freelancer: Address,
         token: Address,
@@ -81,7 +82,8 @@ impl EscrowContract {
             err(&env, Error::InvalidMilestoneId);
         }
 
-        let len_opt = env.storage().persistent().get::<_, EscrowState>(&DataKey::Escrow);
+        let data_key = DataKey::Escrow(project_id.clone());
+        let len_opt = env.storage().persistent().get::<_, EscrowState>(&data_key);
         if let Some(state) = len_opt {
             if state.initialized {
                 err(&env, Error::AlreadyInitialized);
@@ -112,7 +114,7 @@ impl EscrowContract {
             initialized: true,
         };
 
-        env.storage().persistent().set(&DataKey::Escrow, &state);
+        env.storage().persistent().set(&data_key, &state);
 
         let token_client = token::Client::new(&env, &token);
         token_client.transfer(&client, &env.current_contract_address(), &total);
@@ -120,8 +122,8 @@ impl EscrowContract {
         0
     }
 
-    fn load_state(env: &Env) -> EscrowState {
-        match env.storage().persistent().get::<_, EscrowState>(&DataKey::Escrow) {
+    fn load_state(env: &Env, project_id: &String) -> EscrowState {
+        match env.storage().persistent().get::<_, EscrowState>(&DataKey::Escrow(project_id.clone())) {
             Some(s) => {
                 if s.initialized {
                     s
@@ -137,8 +139,8 @@ impl EscrowContract {
         }
     }
 
-    pub fn submit_milestone(env: Env, milestone_id: u32) {
-        let mut state = Self::load_state(&env);
+    pub fn submit_milestone(env: Env, project_id: String, milestone_id: u32) {
+        let mut state = Self::load_state(&env, &project_id);
         state.freelancer.require_auth();
 
         if milestone_id >= state.milestones.len() {
@@ -152,11 +154,11 @@ impl EscrowContract {
         milestone.status = MilestoneStatus::Submitted;
         state.milestones.set(milestone_id, milestone);
 
-        env.storage().persistent().set(&DataKey::Escrow, &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id), &state);
     }
 
-    pub fn approve_milestone(env: Env, milestone_id: u32) {
-        let mut state = Self::load_state(&env);
+    pub fn approve_milestone(env: Env, project_id: String, milestone_id: u32) {
+        let mut state = Self::load_state(&env, &project_id);
         state.client.require_auth();
 
         if state.is_disputed {
@@ -179,7 +181,7 @@ impl EscrowContract {
 
         milestone.status = MilestoneStatus::Released;
         state.milestones.set(milestone_id, milestone.clone());
-        env.storage().persistent().set(&DataKey::Escrow, &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id.clone()), &state);
 
         token_client.transfer(
             &env.current_contract_address(),
@@ -188,20 +190,20 @@ impl EscrowContract {
         );
     }
 
-    pub fn flag_dispute(env: Env, caller: Address) {
+    pub fn flag_dispute(env: Env, project_id: String, caller: Address) {
         caller.require_auth();
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env, &project_id);
         if caller != state.client && caller != state.freelancer {
             err(&env, Error::NotAParty);
         }
         state.is_disputed = true;
-        env.storage().persistent().set(&DataKey::Escrow, &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id), &state);
     }
 
-    pub fn resolve_dispute(env: Env, resolver: Address, release_to: Address, amount: i128) {
+    pub fn resolve_dispute(env: Env, project_id: String, resolver: Address, release_to: Address, amount: i128) {
         resolver.require_auth();
 
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env, &project_id);
 
         if resolver != state.admin {
             err(&env, Error::Unauthorized);
@@ -217,13 +219,13 @@ impl EscrowContract {
         }
 
         state.is_disputed = false;
-        env.storage().persistent().set(&DataKey::Escrow, &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id.clone()), &state);
 
         token_client.transfer(&env.current_contract_address(), &release_to, &amount);
     }
 
-    pub fn cancel_contract(env: Env) {
-        let mut state = Self::load_state(&env);
+    pub fn cancel_contract(env: Env, project_id: String) {
+        let mut state = Self::load_state(&env, &project_id);
         state.client.require_auth();
 
         if state.is_closed {
@@ -241,15 +243,22 @@ impl EscrowContract {
         let contract_balance = token_client.balance(&env.current_contract_address());
         
         if contract_balance > 0 {
-            token_client.transfer(&env.current_contract_address(), &state.client, &contract_balance);
+            // Wait, we shouldn't transfer all contract balance, only state.total_amount that hasn't been paid!
+            // But if all milestones are Pending, nothing has been paid yet.
+            // So refunding state.total_amount is correct!
+            // Let's fix this bug.
+            if contract_balance < state.total_amount {
+               err(&env, Error::InsufficientBalance);
+            }
+            token_client.transfer(&env.current_contract_address(), &state.client, &state.total_amount);
         }
 
         state.is_closed = true;
-        env.storage().persistent().set(&DataKey::Escrow, &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id), &state);
     }
 
-    pub fn get_state(env: Env) -> EscrowState {
-        Self::load_state(&env)
+    pub fn get_state(env: Env, project_id: String) -> EscrowState {
+        Self::load_state(&env, &project_id)
     }
 }
 

@@ -37,8 +37,10 @@ fn test_escrow_flow() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -49,7 +51,7 @@ fn test_escrow_flow() {
     assert_eq!(token_client.balance(&client_addr), 700);
     assert_eq!(token_client.balance(&contract_id), 300);
 
-    let state = client.get_state();
+    let state = client.get_state(&project_id);
     assert!(state.initialized);
     assert_eq!(state.admin, client_addr);
     assert_eq!(state.milestones.len(), 2);
@@ -73,8 +75,10 @@ fn test_submit_and_approve_milestone() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -82,15 +86,15 @@ fn test_submit_and_approve_milestone() {
         &descriptions,
     );
 
-    client.submit_milestone(&0);
-    let state = client.get_state();
+    client.submit_milestone(&project_id, &0);
+    let state = client.get_state(&project_id);
     assert_eq!(
         state.milestones.get(0).unwrap().status,
         MilestoneStatus::Submitted
     );
 
-    client.approve_milestone(&0);
-    let state = client.get_state();
+    client.approve_milestone(&project_id, &0);
+    let state = client.get_state(&project_id);
     assert_eq!(
         state.milestones.get(0).unwrap().status,
         MilestoneStatus::Released
@@ -113,8 +117,10 @@ fn test_dispute_flow() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -122,15 +128,15 @@ fn test_dispute_flow() {
         &descriptions,
     );
 
-    client.flag_dispute(&client_addr);
-    let state = client.get_state();
+    client.flag_dispute(&project_id, &client_addr);
+    let state = client.get_state(&project_id);
     assert!(state.is_disputed);
 
-    client.resolve_dispute(&client_addr, &client_addr, &500);
+    client.resolve_dispute(&project_id, &client_addr, &client_addr, &500);
     assert_eq!(token_client.balance(&contract_id), 0);
     assert_eq!(token_client.balance(&client_addr), 500);
 
-    let state = client.get_state();
+    let state = client.get_state(&project_id);
     assert!(!state.is_disputed);
 }
 
@@ -149,8 +155,10 @@ fn test_initialize_twice_should_fail() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -158,6 +166,7 @@ fn test_initialize_twice_should_fail() {
         &descriptions,
     );
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -181,8 +190,10 @@ fn test_resolve_dispute_unauthorized() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -190,9 +201,9 @@ fn test_resolve_dispute_unauthorized() {
         &descriptions,
     );
 
-    client.flag_dispute(&client_addr);
+    client.flag_dispute(&project_id, &client_addr);
 
-    client.resolve_dispute(&freelancer_addr, &freelancer_addr, &500);
+    client.resolve_dispute(&project_id, &freelancer_addr, &freelancer_addr, &500);
 }
 
 #[test]
@@ -210,8 +221,10 @@ fn test_resolve_dispute_when_not_disputed() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -219,7 +232,7 @@ fn test_resolve_dispute_when_not_disputed() {
         &descriptions,
     );
 
-    client.resolve_dispute(&client_addr, &freelancer_addr, &500);
+    client.resolve_dispute(&project_id, &client_addr, &freelancer_addr, &500);
 }
 
 #[test]
@@ -237,8 +250,10 @@ fn test_resolve_dispute_insufficient_balance() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -246,9 +261,9 @@ fn test_resolve_dispute_insufficient_balance() {
         &descriptions,
     );
 
-    client.flag_dispute(&client_addr);
+    client.flag_dispute(&project_id, &client_addr);
 
-    client.resolve_dispute(&client_addr, &freelancer_addr, &9999);
+    client.resolve_dispute(&project_id, &client_addr, &freelancer_addr, &9999);
 }
 
 #[test]
@@ -266,8 +281,10 @@ fn test_flag_dispute_by_non_party() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -276,7 +293,7 @@ fn test_flag_dispute_by_non_party() {
     );
 
     let stranger = Address::generate(&env);
-    client.flag_dispute(&stranger);
+    client.flag_dispute(&project_id, &stranger);
 }
 
 #[test]
@@ -294,8 +311,10 @@ fn test_approve_pending_should_fail() {
 
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
+    let project_id = String::from_str(&env, "proj_1");
 
     client.initialize(
+        &project_id,
         &client_addr,
         &freelancer_addr,
         &token_addr,
@@ -303,5 +322,5 @@ fn test_approve_pending_should_fail() {
         &descriptions,
     );
 
-    client.approve_milestone(&0);
+    client.approve_milestone(&project_id, &0);
 }

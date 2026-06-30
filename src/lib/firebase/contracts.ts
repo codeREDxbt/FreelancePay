@@ -2,6 +2,7 @@ import {
   collection,
   addDoc,
   doc,
+  setDoc,
   getDoc,
   updateDoc,
   query,
@@ -37,11 +38,18 @@ function saveLocalContracts(contracts: Contract[]) {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contracts));
 }
 
+export function generateContractId(): string {
+  return doc(collection(db, CONTRACTS_COLLECTION)).id;
+}
+
 export async function createContract(
-  data: Omit<Contract, "id" | "createdAt" | "updatedAt">
+  data: Omit<Contract, "id" | "createdAt" | "updatedAt">,
+  customId?: string
 ): Promise<string> {
   try {
-    const ref = await addDoc(collection(db, CONTRACTS_COLLECTION), {
+    const colRef = collection(db, CONTRACTS_COLLECTION);
+    const ref = customId ? doc(colRef, customId) : doc(colRef);
+    await setDoc(ref, {
       ...data,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -49,7 +57,7 @@ export async function createContract(
     return ref.id;
   } catch (err) {
     console.warn("Firebase failed, falling back to LocalStorage:", err);
-    const mockId = "local_" + Math.random().toString(36).substr(2, 9);
+    const mockId = customId || ("local_" + Math.random().toString(36).substr(2, 9));
     const newContract: Contract = {
       ...data,
       id: mockId,

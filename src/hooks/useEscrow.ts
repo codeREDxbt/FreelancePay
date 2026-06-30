@@ -16,7 +16,7 @@ export function usdcToStroops(amount: number): bigint {
   return BigInt(intPart + padded);
 }
 
-export function useEscrow(contractId?: string) {
+export function useEscrow(projectId?: string, contractId?: string) {
   const { isConnected, publicKey, sign } = useWallet();
   const [state, setState] = useState<EscrowState | null>(null);
   const [isFetching, setIsFetching] = useState(false);
@@ -34,10 +34,11 @@ export function useEscrow(contractId?: string) {
   }, [publicKey, resolvedContractId]);
 
   const fetchState = useCallback(async () => {
+    if (!projectId) return;
     setIsFetching(true);
     setError(null);
     try {
-      const tx = await client.get_state();
+      const tx = await client.get_state({ project_id: projectId });
       if (tx.result) {
         setState(tx.result);
       }
@@ -61,11 +62,11 @@ export function useEscrow(contractId?: string) {
   }, [client]);
 
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && projectId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchState();
     }
-  }, [isConnected, fetchState]);
+  }, [isConnected, projectId, fetchState]);
 
   const approveMilestone = useCallback(async (milestoneId: number) => {
     if (!isConnected) {
@@ -77,7 +78,8 @@ export function useEscrow(contractId?: string) {
     const toastId = toast.loading("Waiting for wallet signature...");
     
     try {
-      const tx = await client.approve_milestone({ milestone_id: milestoneId });
+      if (!projectId) throw new Error("Missing projectId");
+      const tx = await client.approve_milestone({ project_id: projectId, milestone_id: milestoneId });
 
       const unsigned = prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign((await unsigned).toString());
@@ -105,6 +107,7 @@ export function useEscrow(contractId?: string) {
   }, [isConnected, client, sign, fetchState]);
 
   const fundContract = useCallback(async (
+    projectId: string,
     freelancerAddress: string,
     amounts: number[],
     descriptions: string[]
@@ -121,6 +124,7 @@ export function useEscrow(contractId?: string) {
       const amountsI128 = amounts.map(usdcToStroops);
 
       const tx = await client.initialize({
+        project_id: projectId,
         client: publicKey!,
         freelancer: freelancerAddress,
         token: getUSDCSACAddress(),
@@ -192,7 +196,8 @@ export function useEscrow(contractId?: string) {
         }
       }
 
-      const tx = await client.submit_milestone({ milestone_id: milestoneId });
+      if (!projectId) throw new Error("Missing projectId");
+      const tx = await client.submit_milestone({ project_id: projectId, milestone_id: milestoneId });
 
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
@@ -229,7 +234,8 @@ export function useEscrow(contractId?: string) {
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     try {
-      const tx = await client.flag_dispute({ caller: publicKey });
+      if (!projectId) throw new Error("Missing projectId");
+      const tx = await client.flag_dispute({ project_id: projectId, caller: publicKey });
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
       toast.loading("Submitting dispute to Soroban...", { id: toastId });
@@ -271,8 +277,10 @@ export function useEscrow(contractId?: string) {
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     try {
+      if (!projectId) throw new Error("Missing projectId");
       const amountI128 = usdcToStroops(amount);
       const tx = await client.resolve_dispute({
+        project_id: projectId,
         resolver,
         release_to: releaseTo,
         amount: amountI128,
@@ -309,7 +317,8 @@ export function useEscrow(contractId?: string) {
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     try {
-      const tx = await client.cancel_contract();
+      if (!projectId) throw new Error("Missing projectId");
+      const tx = await client.cancel_contract({ project_id: projectId });
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
       toast.loading("Submitting cancellation to Soroban...", { id: toastId });

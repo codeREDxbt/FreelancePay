@@ -19,7 +19,7 @@ export default function ContractDetailPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { isConnected, publicKey } = useWallet();
-  const contractAuto = useEscrow();
+  const contractAuto = useEscrow(id);
   const {
     approveMilestone,
     submitMilestone: onChainSubmitMilestone,

@@ -63,7 +63,12 @@ function NewContractForm() {
       const milestoneDescriptions = formData.milestones.map(m => m.description);
       const totalAmount = milestoneAmounts.reduce((a, b) => a + b, 0);
 
+      // Dynamically import generateContractId so it works on client side
+      const { generateContractId } = await import("@/lib/firebase/contracts");
+      const projectId = generateContractId();
+
       const result = await fundContract(
+        projectId,
         formData.freelancerAddress,
         milestoneAmounts,
         milestoneDescriptions
@@ -93,7 +98,7 @@ function NewContractForm() {
           if (m.deliverableUrl) milestone.deliverableUrl = m.deliverableUrl;
           return milestone;
         })
-      });
+      }, projectId);
 
       // Update Job and Application statuses if they exist
       if (formData.jobId && formData.applicationId) {
