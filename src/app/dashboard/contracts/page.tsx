@@ -194,9 +194,13 @@ export default function ContractsPage() {
                         <span className={`inline-flex items-center px-3 py-1 text-[10px] font-bold uppercase tracking-widest border-2 ${
                           contract.isClosed ? "border-ink-tertiary text-ink-secondary" :
                           contract.isDisputed ? "border-status-disputed text-status-disputed bg-status-disputed/10" :
-                          "border-accent text-accent bg-accent/10"
+                          (contract.milestones && contract.milestones.length > 0 && contract.milestones.every(m => m.status === "released" || m.status === "approved")) ? "border-accent text-accent bg-accent/10" :
+                          "border-ink-primary text-ink-primary"
                         }`}>
-                          {contract.isClosed ? "Closed" : contract.isDisputed ? "Disputed" : "Active"}
+                          {contract.isClosed ? "Closed" : 
+                           contract.isDisputed ? "Disputed" : 
+                           (contract.milestones && contract.milestones.length > 0 && contract.milestones.every(m => m.status === "released" || m.status === "approved")) ? "Completed" : 
+                           "Active"}
                         </span>
                         <ChevronRight className="w-5 h-5 text-ink-tertiary group-hover:text-accent transition-colors" />
                       </div>
