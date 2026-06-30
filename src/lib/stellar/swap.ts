@@ -72,6 +72,17 @@ export async function getSwapQuote(params: {
   publicKey: string;
   kind: SwapQuoteKind;
 }): Promise<SwapQuote | null> {
+  // On testnet, Horizon often returns garbage 1:1 paths.
+  // If we have an AMM configured, prefer the real reference rate (which triggers Soroban swap).
+  if (STELLAR_CONFIG.ammContractId) {
+    const refQuote = await buildReferenceQuote({
+      sourceAsset: params.sourceAsset,
+      sourceAmount: params.sourceAmount,
+      destAsset: params.destAsset,
+    });
+    if (refQuote) return refQuote;
+  }
+
   if (params.kind === "send") {
     const horizonQuote = await tryStrictSend({
       sourceAsset: params.sourceAsset,
