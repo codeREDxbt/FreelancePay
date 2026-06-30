@@ -5,7 +5,7 @@ use soroban_sdk::{
 };
 
 #[contracttype]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum MilestoneStatus {
     Pending,
     Submitted,
@@ -71,7 +71,6 @@ impl EscrowContract {
         env: Env,
         client: Address,
         freelancer: Address,
-        admin: Address,
         token: Address,
         milestone_amounts: Vec<i128>,
         milestone_descriptions: Vec<String>,
@@ -104,7 +103,7 @@ impl EscrowContract {
         let state = EscrowState {
             client: client.clone(),
             freelancer,
-            admin,
+            admin: client.clone(),
             token: token.clone(),
             total_amount: total,
             milestones,
