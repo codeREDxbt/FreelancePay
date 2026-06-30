@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
@@ -8,121 +8,206 @@ if (!admin.apps.length) {
 
 const db = getFirestore();
 
-export const createContract = onCall(async (request) => {
-  const { data, auth } = request;
-  if (!auth) {
-    throw new HttpsError("unauthenticated", "Must be signed in");
+export const createContract = functions.https.onCall(
+  async (data: any, context: any) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Must be signed in"
+      );
+    }
+
+    const {
+      contractAddress,
+      freelancerWallet,
+      title,
+      description,
+      totalAmount,
+      milestones,
+    } = data;
+
+    if (
+      !contractAddress ||
+      !freelancerWallet ||
+      !title ||
+      !description ||
+      typeof totalAmount !== "number" ||
+      !Array.isArray(milestones)
+    ) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing or invalid fields"
+      );
+    }
+
+    const now = FieldValue.serverTimestamp();
+
+    const ref = await db.collection("contracts").add({
+      contractAddress,
+      clientWallet: context.auth.uid,
+      freelancerWallet,
+      title,
+      description,
+      totalAmount,
+      milestones,
+      isDisputed: false,
+      isClosed: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { id: ref.id };
   }
+);
 
-  const {
-    contractAddress,
-    freelancerWallet,
-    title,
-    description,
-    totalAmount,
-    milestones,
-  } = data;
+export const releaseMilestone = functions.https.onCall(
+  async (data: any, context: any) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Must be signed in"
+      );
+    }
 
-  if (
-    !contractAddress ||
-    !freelancerWallet ||
-    !title ||
-    !description ||
-    typeof totalAmount !== "number" ||
-    !Array.isArray(milestones)
-  ) {
-    throw new HttpsError("invalid-argument", "Missing or invalid fields");
+    const { contractId, milestoneId } = data;
+
+    if (!contractId || typeof milestoneId !== "number") {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing required fields"
+      );
+    }
+
+    const contractRef = db.collection("contracts").doc(contractId);
+    const snap = await contractRef.get();
+
+    if (!snap.exists) {
+      throw new functions.https.HttpsError("not-found", "Contract not found");
+    }
+
+    const contract = snap.data()!;
+    if (contract.clientWallet !== context.auth.uid) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Only the client can release milestones"
+      );
+    }
+
+    const milestones = [...contract.milestones];
+    if (milestoneId < 0 || milestoneId >= milestones.length) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid milestoneId"
+      );
+    }
+
+    milestones[milestoneId] = {
+      ...milestones[milestoneId],
+      status: "released",
+    };
+
+    await contractRef.update({
+      milestones,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true };
   }
+);
 
-  const now = FieldValue.serverTimestamp();
+export const updateMilestone = functions.https.onCall(
+  async (data: any, context: any) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Must be signed in"
+      );
+    }
 
-  const ref = await db.collection("contracts").add({
-    contractAddress,
-    clientWallet: auth.uid,
-    freelancerWallet,
-    title,
-    description,
-    totalAmount,
-    milestones,
-    isDisputed: false,
-    isClosed: false,
-    createdAt: now,
-    updatedAt: now,
-  });
+    const { contractId, milestoneId, status, deliverableUrl } = data;
 
-  return { id: ref.id };
-});
+    if (!contractId || typeof milestoneId !== "number" || !status) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing required fields"
+      );
+    }
 
-export const updateMilestone = onCall(async (request) => {
-  const { data, auth } = request;
-  if (!auth) {
-    throw new HttpsError("unauthenticated", "Must be signed in");
+    const contractRef = db.collection("contracts").doc(contractId);
+    const snap = await contractRef.get();
+
+    if (!snap.exists) {
+      throw new functions.https.HttpsError("not-found", "Contract not found");
+    }
+
+    const contract = snap.data()!;
+    const wallet = context.auth.uid;
+    if (
+      contract.clientWallet !== wallet &&
+      contract.freelancerWallet !== wallet
+    ) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Not a party to this contract"
+      );
+    }
+
+    const milestones = [...contract.milestones];
+    if (milestoneId < 0 || milestoneId >= milestones.length) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid milestoneId"
+      );
+    }
+
+    milestones[milestoneId] = {
+      ...milestones[milestoneId],
+      status,
+      ...(deliverableUrl ? { deliverableUrl } : {}),
+    };
+
+    await contractRef.update({
+      milestones,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true };
   }
+);
 
-  const { contractId, milestoneId, status, deliverableUrl } = data;
+export const saveFeedback = functions.https.onCall(
+  async (data: any, context: any) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Must be signed in"
+      );
+    }
 
-  if (!contractId || typeof milestoneId !== "number" || !status) {
-    throw new HttpsError("invalid-argument", "Missing required fields");
+    const { contractId, rating, comment } = data;
+
+    if (!contractId || typeof rating !== "number" || !comment) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing required fields"
+      );
+    }
+
+    if (rating < 1 || rating > 5) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Rating must be between 1 and 5"
+      );
+    }
+
+    await db.collection("feedback").add({
+      contractId,
+      rating,
+      comment,
+      walletAddress: context.auth.uid,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true };
   }
-
-  const contractRef = db.collection("contracts").doc(contractId);
-  const snap = await contractRef.get();
-
-  if (!snap.exists) {
-    throw new HttpsError("not-found", "Contract not found");
-  }
-
-  const contract = snap.data()!;
-  const wallet = auth.uid;
-  if (
-    contract.clientWallet !== wallet &&
-    contract.freelancerWallet !== wallet
-  ) {
-    throw new HttpsError("permission-denied", "Not a party to this contract");
-  }
-
-  const milestones = [...contract.milestones];
-  if (milestoneId < 0 || milestoneId >= milestones.length) {
-    throw new HttpsError("invalid-argument", "Invalid milestoneId");
-  }
-
-  milestones[milestoneId] = {
-    ...milestones[milestoneId],
-    status,
-    ...(deliverableUrl ? { deliverableUrl } : {}),
-  };
-
-  await contractRef.update({
-    milestones,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-
-  return { success: true };
-});
-
-export const saveFeedback = onCall(async (request) => {
-  const { data, auth } = request;
-  if (!auth) {
-    throw new HttpsError("unauthenticated", "Must be signed in");
-  }
-
-  const { contractId, rating, comment } = data;
-
-  if (!contractId || typeof rating !== "number" || !comment) {
-    throw new HttpsError("invalid-argument", "Missing required fields");
-  }
-
-  if (rating < 1 || rating > 5) {
-    throw new HttpsError("invalid-argument", "Rating must be between 1 and 5");
-  }
-
-  await db.collection("feedback").add({
-    contractId,
-    rating,
-    comment,
-    walletAddress: auth.uid,
-    createdAt: FieldValue.serverTimestamp(),
-  });
-
-  return { success: true };
-});
+);

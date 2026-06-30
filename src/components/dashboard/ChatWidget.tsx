@@ -13,7 +13,7 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
   const { publicKey } = useWallet();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToMessages(contractId, (msgs) => {
@@ -23,7 +23,9 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
   }, [contractId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -44,7 +46,7 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-ink-tertiary">
             <MessageSquare className="w-8 h-8 mb-2 opacity-50" />
@@ -74,7 +76,6 @@ export function ChatWidget({ contractId }: ChatWidgetProps) {
             );
           })
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
