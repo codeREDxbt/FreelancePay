@@ -80,8 +80,8 @@ function NewContractForm() {
         contractAddress: txHash,
         isDisputed: false,
         isClosed: false,
-        jobId: formData.jobId || null,
-        applicationId: formData.applicationId || null,
+        ...(formData.jobId ? { jobId: formData.jobId } : {}),
+        ...(formData.applicationId ? { applicationId: formData.applicationId } : {}),
         milestones: formData.milestones.map((m, idx) => {
           const milestone: any = {
             id: idx + 1,
