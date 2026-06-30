@@ -1,10 +1,10 @@
-import { Header } from "@/components/layout/Header";
+import { LandingNav } from "@/components/layout/LandingNav";
 import { Footer } from "@/components/layout/Footer";
 
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-bg-base flex flex-col font-ui-label selection:bg-accent selection:text-bg-base">
-      <Header />
+      <LandingNav />
       
       <main className="flex-grow pt-32 pb-24 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto w-full">
         <h1 className="font-headline-lg text-4xl md:text-6xl font-extrabold uppercase tracking-tighter text-ink-primary mb-8 border-l-4 border-accent pl-6">
