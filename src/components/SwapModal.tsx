@@ -60,6 +60,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
   const [usdcBalance, setUsdcBalance] = useState("0");
   const [hasUSDCTrust, setHasUSDCTrust] = useState(false);
   const [copiedIssuer, setCopiedIssuer] = useState(false);
+  const [forceHorizon, setForceHorizon] = useState(false);
 
   const [quote, setQuote] = useState<{
     kind: "send" | "receive";
@@ -122,6 +123,10 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
   }, [isOpen, isConnected, publicKey]);
 
   useEffect(() => {
+    setForceHorizon(false);
+  }, [amount, direction]);
+
+  useEffect(() => {
     if (!amount || Number(amount) <= 0 || !isConnected || !publicKey) {
       const timeout = setTimeout(() => setQuote(null), 0);
       return () => clearTimeout(timeout);
@@ -136,6 +141,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
           destAmount: amount,
           publicKey,
           kind: "send",
+          forceHorizon,
         });
         setQuote(q);
       } catch {
@@ -145,7 +151,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
       }
     }, 500);
     return () => clearTimeout(timeout);
-  }, [amount, direction, isConnected, publicKey, fromAsset, toAsset]);
+  }, [amount, direction, isConnected, publicKey, fromAsset, toAsset, forceHorizon]);
 
   const handleFlip = useCallback(() => {
     setDirection((d) => (d === "buy_usdc" ? "sell_usdc" : "buy_usdc"));
@@ -581,9 +587,18 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                     </p>
                   )}
                   {ammInsufficientLiquidity && Number(amount) <= Number(fromBalance) && (
-                    <p className="text-xs text-error font-ui-label text-center mb-2 font-bold uppercase tracking-widest">
-                      Insufficient Pool Liquidity
-                    </p>
+                    <div className="text-center mb-2">
+                      <p className="text-xs text-error font-ui-label font-bold uppercase tracking-widest mb-1">
+                        Insufficient Pool Liquidity
+                      </p>
+                      <button 
+                        type="button"
+                        onClick={() => setForceHorizon(true)}
+                        className="text-xs text-ink-secondary underline hover:text-ink-primary font-ui-label"
+                      >
+                        Try Testnet Fallback Orderbook
+                      </button>
+                    </div>
                   )}
                   <m.button
                     type="button"
