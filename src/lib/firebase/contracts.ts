@@ -138,8 +138,11 @@ export async function updateMilestoneStatus(
       ...(deliverableUrl ? { deliverableUrl } : {})
     };
 
+    const isClosed = milestones.every(m => m.status === "approved" || m.status === "released");
+
     await updateDoc(contractRef, {
       milestones,
+      ...(isClosed ? { isClosed: true } : {}),
       updatedAt: serverTimestamp(),
     });
   } catch (err) {
@@ -153,7 +156,13 @@ export async function updateMilestoneStatus(
           status,
           ...(deliverableUrl ? { deliverableUrl } : {})
         };
-        return { ...c, milestones: updatedMilestones, updatedAt: new Date() };
+        const isClosed = updatedMilestones.every(m => m.status === "approved" || m.status === "released");
+        return { 
+          ...c, 
+          milestones: updatedMilestones, 
+          ...(isClosed ? { isClosed: true } : {}),
+          updatedAt: new Date() 
+        };
       }
       return c;
     });
@@ -174,5 +183,24 @@ export async function saveFeedback(contractId: string, feedback: {
     });
   } catch (err) {
     console.warn("Firebase failed, ignoring feedback save:", err);
+  }
+}
+
+export async function flagDispute(contractId: string) {
+  try {
+    const contractRef = doc(db, CONTRACTS_COLLECTION, contractId);
+    await updateDoc(contractRef, {
+      isDisputed: true,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Firebase failed, updating LocalStorage:", err);
+    const local = getLocalContracts();
+    const updated = local.map(c =>
+      c.id === contractId
+        ? { ...c, isDisputed: true, updatedAt: new Date() }
+        : c
+    );
+    saveLocalContracts(updated);
   }
 }
