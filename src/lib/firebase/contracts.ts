@@ -13,6 +13,13 @@ import {
 import { db } from "./config";
 import type { Contract, MilestoneStatus } from "@/types";
 
+function withTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms))
+  ]);
+}
+
 const CONTRACTS_COLLECTION = "contracts";
 const LOCAL_STORAGE_KEY = "freelancepay_mock_contracts";
 
@@ -93,8 +100,8 @@ export async function getUserContracts(
     );
 
     const [clientSnap, freelancerSnap] = await Promise.all([
-      getDocs(q),
-      getDocs(freelancerQ),
+      withTimeout(getDocs(q)),
+      withTimeout(getDocs(freelancerQ)),
     ]);
 
     const all = [

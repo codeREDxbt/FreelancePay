@@ -1,6 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Wallet auth flow", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as any).__PLAYWRIGHT__ = true;
+    });
+  });
+
   test("connects wallet and goes through wizard", async ({ page }) => {
     await page.goto("/auth");
 

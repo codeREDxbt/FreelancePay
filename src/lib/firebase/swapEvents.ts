@@ -12,6 +12,13 @@ import { db } from "./config";
 const SWAP_EVENTS_COLLECTION = "swap_events";
 const LOCAL_STORAGE_KEY = "freelancepay_mock_swap_events";
 
+function withTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms))
+  ]);
+}
+
 export interface SwapEvent {
   id: string;
   walletAddress: string;
@@ -110,7 +117,7 @@ export async function getUserSwapEvents(
       where("walletAddress", "==", walletAddress),
       orderBy("createdAt", "desc")
     );
-    const snap = await getDocs(q);
+    const snap = await withTimeout(getDocs(q));
     const events = snap.docs.map((d) =>
       normalize({ id: d.id, ...(d.data() as Omit<RawSwapEvent, "id">) })
     );
