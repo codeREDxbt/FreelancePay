@@ -17,6 +17,25 @@ FreelancePay is a decentralized platform built to secure work and payments using
 
 This repository contains **over 15+ meaningful commits**, showcasing continuous development, smart contract integration, UI improvements, and core feature implementations.
 
+## Project Structure
+
+```text
+FreelancePay/
+├── contracts/       # Stellar Soroban Rust smart contracts
+├── functions/       # Firebase Cloud Functions backend
+├── public/          # Static assets (images, icons, etc.)
+├── scripts/         # Helper scripts (seeding, maintenance)
+├── src/             # Next.js frontend source code
+│   ├── app/         # App router pages and API routes
+│   ├── components/  # Reusable React components
+│   ├── constants/   # Configuration constants
+│   ├── hooks/       # Custom React hooks
+│   ├── lib/         # Utility functions and shared logic
+│   └── types/       # TypeScript type definitions
+├── tests/           # Integration and E2E tests
+└── test/            # Unit tests
+```
+
 ## Screenshots
 
 ### Product UI & Landing
