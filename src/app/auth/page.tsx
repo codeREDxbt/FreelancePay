@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useWallet } from "@/hooks/useWallet";
+import { useProfile } from "@/hooks/useProfile";
 import { Redirect } from "@/components/Redirect";
 import { m, AnimatePresence } from "framer-motion";
-import { Loader2, CheckCircle2, User, Briefcase, ChevronRight, Wallet, ArrowRight, Code2, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle2, User, Briefcase, ChevronRight, Wallet, ArrowRight, Code2, ArrowLeft, Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
@@ -34,6 +35,20 @@ export default function AuthWizard() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const { updateProfile } = useProfile(publicKey);
+
+  const getEmailProvider = (emailAddress: string) => {
+    const domain = emailAddress.split("@")[1]?.toLowerCase();
+    if (!domain) return null;
+    if (domain.includes("gmail")) return "Gmail";
+    if (domain.includes("proton")) return "ProtonMail";
+    if (domain.includes("outlook") || domain.includes("hotmail") || domain.includes("live")) return "Outlook";
+    if (domain.includes("yahoo")) return "Yahoo";
+    if (domain.includes("icloud") || domain.includes("me") || domain.includes("mac")) return "iCloud";
+    return domain;
+  };
+
+  const emailProvider = getEmailProvider(email);
 
   // If already fully connected and wizard is done, or if just revisiting
   // We'll let them go through the wizard if they are here, but if they hit step 4, we redirect.
@@ -59,6 +74,13 @@ export default function AuthWizard() {
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) return;
+    
+    // Save to profile so dashboard picks it up immediately
+    updateProfile({ username: name, pfpUrl: "" });
+    if (typeof window !== "undefined" && publicKey) {
+      localStorage.setItem(`fp_prefs_${publicKey}`, JSON.stringify({ role, email }));
+    }
+
     setDirection(1);
     setStep(4);
     setIsFinalizing(true);
@@ -210,15 +232,23 @@ export default function AuthWizard() {
                       className="bg-bg-interactive border border-edge-neutral rounded-lg p-3 text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-all"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-ui-label text-ink-secondary">Email Address</label>
+                  <div className="flex flex-col gap-1.5 relative">
+                    <label className="text-ui-label text-ink-secondary flex items-center justify-between">
+                      Email Address
+                      {emailProvider && (
+                        <span className="text-xs text-accent flex items-center gap-1 font-bold">
+                          <Mail className="w-3 h-3" />
+                          {emailProvider}
+                        </span>
+                      )}
+                    </label>
                     <input 
                       type="email" 
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       required
                       placeholder="satoshi@example.com"
-                      className="bg-bg-interactive border border-edge-neutral rounded-lg p-3 text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-all"
+                      className="bg-bg-interactive border border-edge-neutral rounded-lg p-3 pr-24 text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-all"
                     />
                   </div>
                   
