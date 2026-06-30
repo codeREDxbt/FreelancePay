@@ -131,7 +131,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
               <ArrowLeft className="w-4 h-4" /> Back to Jobs
             </Link>
             
-            {isOwner && (
+            {isOwner && job.status === "open" && (
               <button 
                 onClick={handleDeleteJob}
                 className="flex items-center gap-2 text-status-disputed hover:bg-status-disputed/10 border border-transparent hover:border-status-disputed/20 px-3 py-1.5 transition-colors font-ui-label text-sm font-bold uppercase tracking-widest"

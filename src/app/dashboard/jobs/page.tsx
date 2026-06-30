@@ -33,7 +33,8 @@ export default function JobsPage() {
       try {
         let data: Job[];
         if (activeTab === "my-jobs" && publicKey) {
-          data = await getMyJobs(publicKey);
+          const allMyJobs = await getMyJobs(publicKey);
+          data = allMyJobs.filter(job => job.status === "open");
         } else {
           data = await getJobs();
         }
