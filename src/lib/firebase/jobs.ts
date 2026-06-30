@@ -77,11 +77,19 @@ export async function getJobs(): Promise<Job[]> {
   try {
     const q = query(
       collection(db, JOBS_COLLECTION),
-      where("status", "==", "open"),
-      orderBy("createdAt", "desc")
+      where("status", "==", "open")
     );
     const snap = await withTimeout(getDocs(q));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Job));
+    const jobs = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+      } as Job;
+    });
+    return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (err) {
     console.warn("Firebase failed, falling back to LocalStorage:", err);
     return getLocalJobs().filter(j => j.status === "open").sort((a, b) => {
@@ -99,12 +107,16 @@ export async function getMyJobs(clientId: string): Promise<Job[]> {
       where("clientId", "==", clientId)
     );
     const snap = await withTimeout(getDocs(q));
-    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Job));
-    return docs.sort((a, b) => {
-      const timeA = new Date(a.createdAt).getTime();
-      const timeB = new Date(b.createdAt).getTime();
-      return timeB - timeA;
+    const jobs = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+      } as Job;
     });
+    return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (err) {
     console.warn("Firebase failed, falling back to LocalStorage:", err);
     return getLocalJobs().filter(j => j.clientId === clientId).sort((a, b) => {
@@ -119,7 +131,13 @@ export async function getJob(id: string): Promise<Job | null> {
   try {
     const snap = await getDoc(doc(db, JOBS_COLLECTION, id));
     if (!snap.exists()) throw new Error("Not found in Firebase");
-    return { id: snap.id, ...snap.data() } as Job;
+    const data = snap.data();
+    return {
+      id: snap.id,
+      ...data,
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+      updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+    } as Job;
   } catch (err) {
     console.warn("Firebase failed, checking LocalStorage:", err);
     return getLocalJobs().find(j => j.id === id) || null;
@@ -180,11 +198,19 @@ export async function getJobApplications(jobId: string): Promise<JobApplication[
   try {
     const q = query(
       collection(db, APPLICATIONS_COLLECTION),
-      where("jobId", "==", jobId),
-      orderBy("createdAt", "desc")
+      where("jobId", "==", jobId)
     );
     const snap = await withTimeout(getDocs(q));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobApplication));
+    const apps = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+      } as JobApplication;
+    });
+    return apps.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (err) {
     console.warn("Firebase failed, falling back to LocalStorage:", err);
     return getLocalApps().filter(a => a.jobId === jobId).sort((a, b) => {

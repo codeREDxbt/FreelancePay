@@ -227,7 +227,8 @@ export default function ContractDetailPage() {
                           <p className="font-mono-data text-ink-secondary text-sm uppercase tracking-wider flex items-center gap-2">
                             Status: <span className={isCompleted ? 'text-accent' : isActive ? 'text-ink-primary' : ''}>{m.status}</span>
                             {(() => {
-                              const onChainTag = escrowState?.milestones?.[index]?.status?.tag?.toLowerCase();
+                              const onChainStatus = escrowState?.milestones?.[index]?.status as any;
+                              const onChainTag = (typeof onChainStatus === 'string' ? onChainStatus : onChainStatus?.tag || "").toLowerCase();
                               if (onChainTag === "approved" || onChainTag === "released") {
                                 return (
                                   <span className="inline-flex items-center gap-1 bg-accent/10 border border-accent/30 text-accent px-2 py-0.5 text-[10px] rounded-full">

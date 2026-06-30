@@ -163,7 +163,8 @@ export function useEscrow(contractId?: string) {
       const onChain = state;
       const ms = onChain?.milestones?.[milestoneId];
       if (ms) {
-        const tag = (ms.status ?? { tag: "" }).tag?.toLowerCase() ?? "";
+        const statusVal = ms.status as any;
+        const tag = (typeof statusVal === 'string' ? statusVal : statusVal?.tag || "").toLowerCase();
         if (tag !== "pending") {
           throw new Error("This milestone is not in a submittable state.");
         }
