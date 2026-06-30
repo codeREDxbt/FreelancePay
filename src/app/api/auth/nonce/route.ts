@@ -77,6 +77,11 @@ export async function POST(req: Request) {
     if (err instanceof NonceValidationError) {
       return NextResponse.json({ error: 'Missing publicKey or nonce' }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Failed to store nonce' }, { status: 500 });
+    console.error('Auth nonce error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Failed to store nonce';
+    return NextResponse.json(
+      { error: process.env.NODE_ENV !== 'production' ? errorMessage : 'Failed to store nonce' },
+      { status: 500 }
+    );
   }
 }

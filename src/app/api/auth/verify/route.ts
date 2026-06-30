@@ -90,11 +90,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ customToken }, { headers });
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Auth verification error:', error);
-    }
+    console.error('Auth verification error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: process.env.NODE_ENV !== 'production' ? errorMessage : 'Internal server error' },
       { status: 500 }
     );
   }
