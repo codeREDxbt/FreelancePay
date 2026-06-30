@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import { Keypair } from '@stellar/stellar-sdk';
 import { createHash } from 'crypto';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { rateLimit, rateLimitHeaders } from '@/lib/auth/rate-limit';
-
-const NONCE_COLLECTION = 'auth_nonces';
+import { verifySignedNonce, createFirebaseCustomToken } from '@/lib/auth/jwt';
 
 export async function POST(req: Request) {
   const rl = rateLimit(req);
   const headers = rateLimitHeaders(rl);
   if (!rl.allowed) {
-    return NextResponse.json(
+    const res = NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
-      { status: 429, headers }
+      { status: 429 }
     );
+    Object.entries(headers).forEach(([k, v]) => res.headers.set(k, v));
+    return res;
   }
 
   try {
@@ -26,28 +26,34 @@ export async function POST(req: Request) {
       );
     }
 
-    const nonceDocId = `${publicKey}_${nonce}`;
-    const nonceRef = adminDb.collection(NONCE_COLLECTION).doc(nonceDocId);
-    const nonceDoc = await nonceRef.get();
+    // Extract the nonceToken from cookies
+    const cookieHeader = req.headers.get('cookie') || '';
+    const cookies = Object.fromEntries(
+      cookieHeader.split('; ').map(c => {
+        const [k, ...v] = c.split('=');
+        return [k, v.join('=')];
+      })
+    );
+    const nonceToken = cookies['fp_nonce_token'];
 
-    if (!nonceDoc.exists) {
+    if (!nonceToken) {
       return NextResponse.json(
-        { error: 'Nonce not found. Request /api/auth/nonce first.' },
+        { error: 'Nonce token not found in cookies. Request /api/auth/nonce first.' },
         { status: 401 }
       );
     }
 
-    const nonceData = nonceDoc.data();
-    if (!nonceData || nonceData.consumed) {
+    const validNonce = verifySignedNonce(nonceToken);
+    if (!validNonce) {
       return NextResponse.json(
-        { error: 'Nonce has already been consumed' },
+        { error: 'Nonce has expired or is invalid. Request a new one.' },
         { status: 401 }
       );
     }
 
-    if (nonceData.expiresAt < Date.now()) {
+    if (validNonce !== nonce) {
       return NextResponse.json(
-        { error: 'Nonce has expired. Request a new one.' },
+        { error: 'Nonce mismatch.' },
         { status: 401 }
       );
     }
@@ -88,11 +94,19 @@ export async function POST(req: Request) {
       }
     }
 
-    await nonceRef.update({ consumed: true, consumedAt: Date.now() });
+    // Create custom token using pure JS crypto (bypassing firebase-admin entirely!)
+    const customToken = createFirebaseCustomToken(publicKey);
 
-    const customToken = await adminAuth.createCustomToken(publicKey);
+    // Clear the nonce cookie
+    const res = NextResponse.json({ customToken });
+    Object.entries(headers).forEach(([k, v]) => res.headers.set(k, v));
+    res.cookies.set('fp_nonce_token', '', {
+      httpOnly: true,
+      path: '/',
+      maxAge: 0,
+    });
 
-    return NextResponse.json({ customToken }, { headers });
+    return res;
   } catch (error) {
     console.error('Auth verification error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
