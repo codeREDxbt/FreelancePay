@@ -103,11 +103,12 @@ describe("contracts collection rules", () => {
   });
 
   it("allows clientWallet to read their own contract", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("contracts").doc("c4").set({
-      ...sampleContract(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("contracts").doc("c4").set({
+        ...sampleContract(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
     });
 
     const readerDb = testEnv.authenticatedContext(WALLET_A).firestore();
@@ -116,11 +117,12 @@ describe("contracts collection rules", () => {
   });
 
   it("allows freelancerWallet to read a contract", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("contracts").doc("c5").set({
-      ...sampleContract(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("contracts").doc("c5").set({
+        ...sampleContract(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
     });
 
     const readerDb = testEnv.authenticatedContext(WALLET_C).firestore();
@@ -129,11 +131,12 @@ describe("contracts collection rules", () => {
   });
 
   it("denies read by unrelated wallet", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("contracts").doc("c6").set({
-      ...sampleContract(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("contracts").doc("c6").set({
+        ...sampleContract(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
     });
 
     const readerDb = testEnv.authenticatedContext(WALLET_B).firestore();
@@ -141,11 +144,12 @@ describe("contracts collection rules", () => {
   });
 
   it("allows clientWallet to update a contract", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("contracts").doc("c7").set({
-      ...sampleContract(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("contracts").doc("c7").set({
+        ...sampleContract(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
     });
 
     const updaterDb = testEnv.authenticatedContext(WALLET_A).firestore();
@@ -158,11 +162,12 @@ describe("contracts collection rules", () => {
   });
 
   it("denies delete on contracts", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("contracts").doc("c8").set({
-      ...sampleContract(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("contracts").doc("c8").set({
+        ...sampleContract(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
     });
 
     const deleterDb = testEnv.authenticatedContext(WALLET_A).firestore();
@@ -196,10 +201,11 @@ describe("feedback collection rules", () => {
   });
 
   it("allows authenticated read of feedback", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("feedback").doc("f3").set({
-      ...sampleFeedback(WALLET_A),
-      createdAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("feedback").doc("f3").set({
+        ...sampleFeedback(WALLET_A),
+        createdAt: Date.now(),
+      });
     });
 
     const readerDb = testEnv.authenticatedContext(WALLET_B).firestore();
@@ -207,10 +213,11 @@ describe("feedback collection rules", () => {
   });
 
   it("denies update and delete on feedback", async () => {
-    const adminDb = testEnv.authenticatedContext(WALLET_A).firestore();
-    await adminDb.collection("feedback").doc("f4").set({
-      ...sampleFeedback(WALLET_A),
-      createdAt: Date.now(),
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("feedback").doc("f4").set({
+        ...sampleFeedback(WALLET_A),
+        createdAt: Date.now(),
+      });
     });
 
     const updaterDb = testEnv.authenticatedContext(WALLET_A).firestore();
