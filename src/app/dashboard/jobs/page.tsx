@@ -3,9 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Briefcase, ArrowRight, Clock } from "lucide-react";
-import { getJobs } from "@/lib/firebase/jobs";
+import { getJobs, getMyJobs } from "@/lib/firebase/jobs";
 import { ErrorBoundary } from "@/components/providers/error-boundary";
 import type { Job } from "@/types";
+import { useWallet } from "@/hooks/useWallet";
+
 function formatTimeAgo(dateInput: string | Date) {
   const date = new Date(dateInput);
   const now = new Date();
@@ -18,14 +20,23 @@ function formatTimeAgo(dateInput: string | Date) {
 }
 
 export default function JobsPage() {
+  const { publicKey } = useWallet();
+  const [activeTab, setActiveTab] = useState<"explore" | "my-jobs">("explore");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadJobs() {
+      setIsLoading(true);
+      setError(null);
       try {
-        const data = await getJobs();
+        let data: Job[];
+        if (activeTab === "my-jobs" && publicKey) {
+          data = await getMyJobs(publicKey);
+        } else {
+          data = await getJobs();
+        }
         setJobs(data);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to load jobs");
@@ -34,7 +45,7 @@ export default function JobsPage() {
       }
     }
     loadJobs();
-  }, []);
+  }, [activeTab, publicKey]);
 
   return (
     <ErrorBoundary>
@@ -42,7 +53,7 @@ export default function JobsPage() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
             <h1 className="font-headline-lg text-4xl font-bold text-ink-primary mb-2">Job Board</h1>
-            <p className="font-ui-label text-ink-secondary">Discover open opportunities or post a job to hire top talent.</p>
+            <p className="font-ui-label text-ink-secondary">Discover open opportunities or manage the jobs you posted.</p>
           </div>
           <Link
             href="/dashboard/jobs/new"
@@ -51,6 +62,21 @@ export default function JobsPage() {
             <Plus className="w-4 h-4" />
             Post a Job
           </Link>
+        </div>
+
+        <div className="flex items-center gap-8 border-b-2 border-edge-neutral">
+          <button
+            onClick={() => setActiveTab("explore")}
+            className={`pb-4 font-ui-label font-bold uppercase tracking-widest text-sm transition-colors border-b-2 -mb-[2px] ${activeTab === "explore" ? "text-accent border-accent" : "text-ink-secondary hover:text-ink-primary border-transparent"}`}
+          >
+            Explore Jobs
+          </button>
+          <button
+            onClick={() => setActiveTab("my-jobs")}
+            className={`pb-4 font-ui-label font-bold uppercase tracking-widest text-sm transition-colors border-b-2 -mb-[2px] ${activeTab === "my-jobs" ? "text-accent border-accent" : "text-ink-secondary hover:text-ink-primary border-transparent"}`}
+          >
+            My Jobs
+          </button>
         </div>
 
         {error && (
@@ -68,8 +94,12 @@ export default function JobsPage() {
         ) : jobs.length === 0 ? (
           <div className="text-center py-24 border-2 border-dashed border-edge-neutral bg-black/5">
             <Briefcase className="w-12 h-12 text-ink-tertiary mx-auto mb-4" />
-            <h3 className="font-ui-label text-lg font-bold text-ink-primary uppercase tracking-widest mb-2">No Open Jobs</h3>
-            <p className="font-ui-label text-ink-secondary text-sm max-w-sm mx-auto mb-6">There are currently no open jobs. Check back later or post a new job.</p>
+            <h3 className="font-ui-label text-lg font-bold text-ink-primary uppercase tracking-widest mb-2">No Jobs Found</h3>
+            <p className="font-ui-label text-ink-secondary text-sm max-w-sm mx-auto mb-6">
+              {activeTab === "my-jobs" 
+                ? "You haven't posted any jobs yet. Click 'Post a Job' to hire someone."
+                : "There are currently no open jobs. Check back later or post a new one."}
+            </p>
           </div>
         ) : (
           <div className="grid gap-6">
@@ -98,6 +128,11 @@ export default function JobsPage() {
                       <span className="flex items-center gap-1.5 text-accent font-bold">
                         USDC {job.budget}
                       </span>
+                      {activeTab === "my-jobs" && (
+                        <span className={`px-2 py-0.5 border ${job.status === 'open' ? 'border-status-released text-status-released' : 'border-status-disputed text-status-disputed'}`}>
+                          {job.status}
+                        </span>
+                      )}
                     </div>
                   </div>
                   

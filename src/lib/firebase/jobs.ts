@@ -92,6 +92,29 @@ export async function getJobs(): Promise<Job[]> {
   }
 }
 
+export async function getMyJobs(clientId: string): Promise<Job[]> {
+  try {
+    const q = query(
+      collection(db, JOBS_COLLECTION),
+      where("clientId", "==", clientId)
+    );
+    const snap = await withTimeout(getDocs(q));
+    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Job));
+    return docs.sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+  } catch (err) {
+    console.warn("Firebase failed, falling back to LocalStorage:", err);
+    return getLocalJobs().filter(j => j.clientId === clientId).sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+  }
+}
+
 export async function getJob(id: string): Promise<Job | null> {
   try {
     const snap = await getDoc(doc(db, JOBS_COLLECTION, id));
