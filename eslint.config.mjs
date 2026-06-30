@@ -23,7 +23,12 @@ const eslintConfig = defineConfig([
     "node_modules_old/**",
     "node_modules_old_trash/**",
     "src/lib/contracts/escrow/**",
-    "functions/lib/**"
+    "functions/lib/**",
+    "check-contracts.js",
+    "check-jobs.js",
+    "generate-sa.js",
+    "seed-jobs.js",
+    "test-rules.js"
   ]),
 ]);
 
