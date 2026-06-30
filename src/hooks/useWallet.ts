@@ -59,6 +59,15 @@ const DEFAULT_STATE: WalletState = {
   walletNetwork: null,
 };
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 import type { SupportedWallet } from "@/types";
 
 export function useWallet() {
@@ -84,11 +93,11 @@ export function useWallet() {
     const detectWalletNetwork = async (kitInstance: StellarKit): Promise<string | null> => {
       try {
         const { getNetworkDetails } = await import("@stellar/freighter-api");
-        const nd = await getNetworkDetails();
+        const nd = await withTimeout(getNetworkDetails(), 3000);
         if (nd?.network) {
           return String(nd.network).toUpperCase();
         }
-      } catch { /* not freighter */ }
+      } catch { /* not freighter or timed out */ }
       if (typeof window !== "undefined") {
         return null;
       }
@@ -229,7 +238,7 @@ export function useWallet() {
       const configuredSiteNetwork: string = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? "MAINNET" : "TESTNET";
       try {
         const { getNetworkDetails } = await import("@stellar/freighter-api");
-        const nd = await getNetworkDetails();
+        const nd = await withTimeout(getNetworkDetails(), 3000);
         wNetwork = nd?.network ? String(nd.network).toUpperCase() : null;
       } catch { /* non-freighter */ }
       if (!wNetwork) {

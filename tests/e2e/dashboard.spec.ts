@@ -12,24 +12,24 @@ test.describe('Dashboard User Flows', () => {
 
   test('should load the dashboard and display key metrics', async ({ page }) => {
     await page.goto('/dashboard');
-    
-    // Verify overview cards
-    await expect(page.getByText('Available Balance')).toBeVisible();
-    await expect(page.getByText('Escrowed Amount')).toBeVisible();
-    await expect(page.getByText('Pending Payouts')).toBeVisible();
-    
+
+    // Verify overview cards (wallet-kit init is async, allow time to settle)
+    await expect(page.getByText('Available Balance', { exact: true })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText('Escrowed Amount', { exact: true })).toBeVisible();
+    await expect(page.getByText('Pending Payouts', { exact: true })).toBeVisible();
+
     // Verify wallet address is displayed correctly (it usually truncates)
     await expect(page.getByText('Connected as GA2T6O…QO3K')).toBeVisible();
   });
 
   test('should display active contracts or empty state', async ({ page }) => {
     await page.goto('/dashboard');
-    
+
     // The dashboard lists contracts or shows "No Active Contracts"
-    const noContracts = page.getByText('No Active Contracts');
+    const noContracts = page.getByText('No Active Contracts', { exact: true });
     const createBtn = page.getByRole('button', { name: /Create Contract/i });
-    
-    await expect(noContracts).toBeVisible();
+
+    await expect(noContracts).toBeVisible({ timeout: 30000 });
     await expect(createBtn).toBeVisible();
     
     // Click create contract should navigate
