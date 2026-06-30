@@ -85,8 +85,9 @@ export default function ContractDetailPage() {
         milestones: prev.milestones.map((m, i) => i === activeMilestoneIndex ? { ...m, status: "submitted" as const, deliverableUrl } : m)
       } : null);
       toast.success("Work submitted for review!");
-    } catch {
-      toast.error("Failed to submit work");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || "Failed to submit work");
     } finally {
       setIsSubmittingWork(false);
     }
