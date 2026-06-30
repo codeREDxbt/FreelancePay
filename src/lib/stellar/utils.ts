@@ -38,7 +38,7 @@ export async function submitSignedTransaction(signedXdr: string) {
     throw new Error(`Transaction failed: ${JSON.stringify(result.errorResult)}`);
   }
 
-  const poll = async (attempt: number): Promise<rpc.Api.GetTransactionResponse> => {
+  const poll = async (attempt: number): Promise<rpc.Api.GetTransactionResponse & { txHash: string }> => {
     if (attempt >= MAX_POLL_ATTEMPTS) {
       throw new Error(`Transaction polling timed out after ${MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS / 1000}s`);
     }
@@ -64,7 +64,7 @@ export async function submitSignedTransaction(signedXdr: string) {
       );
     }
 
-    return getResult;
+    return Object.assign(getResult, { txHash: result.hash });
   };
 
   return poll(0);

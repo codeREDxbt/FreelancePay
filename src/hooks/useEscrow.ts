@@ -85,7 +85,13 @@ export function useEscrow(contractId?: string) {
 
       const result = await submitSignedTransaction(signedXdr);
 
-      toast.success("Milestone approved and funds released!", { id: toastId });
+      toast.success("Milestone approved and funds released!", { 
+        id: toastId,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(`https://stellar.expert/explorer/testnet/tx/${result.txHash}`, "_blank")
+        }
+      });
       await fetchState();
       return result;
     } catch (err: unknown) {
@@ -128,7 +134,13 @@ export function useEscrow(contractId?: string) {
       
       const result = await submitSignedTransaction(signedXdr);
 
-      toast.success("Contract funded successfully!", { id: toastId });
+      toast.success("Contract funded successfully!", { 
+        id: toastId,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(`https://stellar.expert/explorer/testnet/tx/${result.txHash}`, "_blank")
+        }
+      });
 
       await new Promise(r => setTimeout(r, 1500));
       await fetchState();
@@ -188,7 +200,13 @@ export function useEscrow(contractId?: string) {
 
       const result = await submitSignedTransaction(signedXdr);
 
-      toast.success("Deliverable submitted on-chain!", { id: toastId });
+      toast.success("Deliverable submitted on-chain!", { 
+        id: toastId,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(`https://stellar.expert/explorer/testnet/tx/${result.txHash}`, "_blank")
+        }
+      });
       await fetchState();
       return result;
     } catch (err: unknown) {
@@ -216,7 +234,13 @@ export function useEscrow(contractId?: string) {
       const signedXdr = await sign(preparedXdr);
       toast.loading("Submitting dispute to Soroban...", { id: toastId });
       const result = await submitSignedTransaction(signedXdr);
-      toast.success("Dispute flagged successfully!", { id: toastId });
+      toast.success("Dispute flagged successfully!", { 
+        id: toastId,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(`https://stellar.expert/explorer/testnet/tx/${result.txHash}`, "_blank")
+        }
+      });
       await fetchState();
       return result;
     } catch (err: unknown) {
@@ -257,7 +281,13 @@ export function useEscrow(contractId?: string) {
       const signedXdr = await sign(preparedXdr);
       toast.loading("Submitting resolution to Soroban...", { id: toastId });
       const result = await submitSignedTransaction(signedXdr);
-      toast.success("Dispute resolved successfully!", { id: toastId });
+      toast.success("Dispute resolved successfully!", { 
+        id: toastId,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(`https://stellar.expert/explorer/testnet/tx/${result.txHash}`, "_blank")
+        }
+      });
       await fetchState();
       return result;
     } catch (err: unknown) {
@@ -284,7 +314,13 @@ export function useEscrow(contractId?: string) {
       const signedXdr = await sign(preparedXdr);
       toast.loading("Submitting cancellation to Soroban...", { id: toastId });
       const result = await submitSignedTransaction(signedXdr);
-      toast.success("Contract cancelled successfully!", { id: toastId });
+      toast.success("Contract cancelled successfully!", { 
+        id: toastId,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(`https://stellar.expert/explorer/testnet/tx/${result.txHash}`, "_blank")
+        }
+      });
       await fetchState();
       return result;
     } catch (err: unknown) {
