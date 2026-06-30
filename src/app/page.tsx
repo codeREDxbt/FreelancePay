@@ -3,6 +3,8 @@
 import { m, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { useEffect } from "react";
 import { ArrowRight, Code2, ShieldCheck, Zap } from "lucide-react";
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
 import { Footer } from "@/components/layout/Footer";

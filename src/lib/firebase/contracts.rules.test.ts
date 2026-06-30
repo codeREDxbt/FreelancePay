@@ -51,7 +51,11 @@ beforeAll(async () => {
   const rulesPath = resolve(process.cwd(), "firestore.rules");
   testEnv = await initializeTestEnvironment({
     projectId: "freelancepay-rules-test",
-    firestore: { rules: readFileSync(rulesPath, "utf8") },
+    firestore: { 
+      rules: readFileSync(rulesPath, "utf8"),
+      host: "127.0.0.1",
+      port: 8080
+    },
   });
 });
 

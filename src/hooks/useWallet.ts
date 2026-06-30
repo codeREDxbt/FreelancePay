@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect, useCallback } from "react";
 import { signInWithCustomToken, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";

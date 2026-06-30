@@ -170,6 +170,33 @@ export async function updateMilestoneStatus(
   }
 }
 
+export async function updateContract(
+  contractId: string,
+  updates: Partial<Contract>
+) {
+  try {
+    const contractRef = doc(db, CONTRACTS_COLLECTION, contractId);
+    await updateDoc(contractRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Firebase failed, updating LocalStorage:", err);
+    let local = getLocalContracts();
+    local = local.map(c => {
+      if (c.id === contractId) {
+        return { 
+          ...c, 
+          ...updates,
+          updatedAt: new Date() 
+        } as Contract;
+      }
+      return c;
+    });
+    saveLocalContracts(local);
+  }
+}
+
 export async function saveFeedback(contractId: string, feedback: {
   rating: number;
   comment: string;
