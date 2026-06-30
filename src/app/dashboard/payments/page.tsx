@@ -134,9 +134,17 @@ export default function PaymentsPage() {
     }
   }, [isConnected, publicKey]);
 
-  const totalProcessed = contracts
-    .filter(c => c.isClosed)
-    .reduce((acc, curr) => acc + Number(curr.totalAmount || 0), 0);
+  const totalProcessed = contracts.reduce((acc, c) => {
+    let contractReleasedAmt = 0;
+    if (c.milestones) {
+      contractReleasedAmt = c.milestones
+        .filter(m => m.status === "released" || m.status === "approved")
+        .reduce((sum, m) => sum + Number(m.amount || 0), 0);
+    } else if (c.isClosed) {
+      contractReleasedAmt = Number(c.totalAmount || 0);
+    }
+    return acc + contractReleasedAmt;
+  }, 0);
 
   const currentEscrow = contracts
     .filter(c => !c.isClosed && !c.isDisputed)

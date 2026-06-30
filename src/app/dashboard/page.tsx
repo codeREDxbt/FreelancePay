@@ -62,11 +62,15 @@ export default function DashboardPage() {
       }
     });
 
+    const allCompleted = syncedActive.milestones && syncedActive.milestones.length > 0 && syncedActive.milestones.every(m => m.status === "approved" || m.status === "released");
+    
+    if (allCompleted && !syncedActive.isClosed) {
+      syncedActive.isClosed = true;
+      import("@/lib/firebase/contracts").then(m => m.updateContract(activeContract.id, { isClosed: true }));
+      hasMismatch = true; // Force a state update
+    }
+
     if (hasMismatch) {
-      const allCompleted = syncedActive.milestones.every(m => m.status === "approved" || m.status === "released");
-      if (allCompleted && !syncedActive.isClosed) {
-        syncedActive.isClosed = true;
-      }
       const idx = syncedContracts.findIndex(c => c.id === activeContract.id);
       if (idx >= 0) syncedContracts[idx] = syncedActive;
       return syncedContracts;
