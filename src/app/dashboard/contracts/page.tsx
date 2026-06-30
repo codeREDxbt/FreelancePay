@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { FileText, Plus, Search, Filter, MoreVertical, RefreshCw } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { FileText, Plus, Search, Filter, ChevronRight, RefreshCw } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import { getUserContracts } from "@/lib/firebase/contracts";
 import type { Contract } from "@/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ErrorBoundary } from "@/components/providers/error-boundary";
+
+type StatusFilter = "all" | "active" | "disputed" | "closed";
 
 export default function ContractsPage() {
   const { isConnected, publicKey } = useWallet();
@@ -14,6 +17,9 @@ export default function ContractsPage() {
     contracts: [],
     isLoading: true
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +32,6 @@ export default function ContractsPage() {
         if (active) setState(prev => ({ ...prev, isLoading: false }));
       });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ contracts: [], isLoading: false });
     }
     return () => { active = false; };
@@ -34,129 +39,173 @@ export default function ContractsPage() {
 
   const { contracts, isLoading } = state;
 
+  const filteredContracts = useMemo(() => {
+    let result = contracts;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(c =>
+        c.title.toLowerCase().includes(term) ||
+        c.id.toLowerCase().includes(term) ||
+        c.clientWallet.toLowerCase().includes(term) ||
+        c.freelancerWallet.toLowerCase().includes(term)
+      );
+    }
+    if (statusFilter !== "all") {
+      result = result.filter(c => {
+        if (statusFilter === "active") return !c.isClosed && !c.isDisputed;
+        if (statusFilter === "disputed") return c.isDisputed;
+        if (statusFilter === "closed") return c.isClosed;
+        return true;
+      });
+    }
+    return result;
+  }, [contracts, searchTerm, statusFilter]);
+
+  const statusLabels: Record<StatusFilter, string> = { all: "All", active: "Active", disputed: "Disputed", closed: "Closed" };
+
   return (
-    <div className="pt-24 pb-12 px-4 md:px-margin-desktop">
-      {/* ── Header Section ────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-section-gap">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-background">
-            Contracts
-          </h2>
-          <p className="font-ui-label text-on-surface-variant mt-1">Manage your active agreements and proposals.</p>
+    <ErrorBoundary>
+      <div className="p-8 lg:p-12 max-w-7xl mx-auto bg-bg-void min-h-screen text-ink-primary">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div>
+            <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">Contracts</h1>
+            <p className="text-ink-secondary font-ui-label text-lg">Manage your active agreements and proposals.</p>
+          </div>
+          <div>
+            <Link href="/dashboard/contracts/new" className="neopop-button-teal px-6 py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              New Contract
+            </Link>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <Link href="/dashboard/contracts/new" className="px-4 py-2 bg-primary text-on-primary rounded-lg font-ui-label text-ui-label flex items-center gap-2 hover:opacity-90 transition-opacity font-bold">
-            <Plus className="w-5 h-5" />
-            New Contract
-          </Link>
-        </div>
-      </div>
 
-      {/* ── Toolbar ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-2.5 text-on-surface-variant w-5 h-5" />
-          <input
-            aria-label="Search contracts"
-            className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-2.5 font-ui-label text-ui-label focus:outline-none focus:border-primary"
-            placeholder="Search by client, title, or ID..."
-            type="text"
-          />
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row gap-6 justify-between items-center mb-8 border-b-2 border-edge-neutral pb-8">
+          <div className="relative w-full sm:w-[400px]">
+            <Search className="absolute left-4 top-3.5 text-ink-tertiary w-5 h-5" />
+            <input
+              aria-label="Search contracts"
+              className="w-full bg-transparent border-2 border-edge-neutral focus:border-accent rounded-none pl-12 pr-4 py-3 font-mono-data text-sm outline-none transition-colors text-ink-primary placeholder:text-ink-tertiary"
+              placeholder="Search client, title, ID..."
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto relative">
+            <button 
+              type="button" 
+              onClick={() => setIsFilterOpen(v => !v)} 
+              className="w-full sm:w-48 px-6 py-3 bg-bg-base border-2 border-edge-neutral hover:border-ink-secondary font-ui-label text-sm uppercase tracking-widest font-bold flex items-center justify-between transition-colors"
+            >
+              <span>{statusLabels[statusFilter]}</span>
+              <Filter className="w-4 h-4" />
+            </button>
+            {isFilterOpen && (
+              <div className="absolute top-full mt-2 right-0 w-full sm:w-48 bg-bg-base border-2 border-edge-neutral shadow-neopop z-20 flex flex-col">
+                {(Object.keys(statusLabels) as StatusFilter[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => { setStatusFilter(key); setIsFilterOpen(false); }}
+                    className={`px-6 py-3 text-left font-ui-label text-sm uppercase tracking-widest font-bold hover:bg-ink-tertiary/10 transition-colors border-b-2 border-edge-neutral last:border-b-0 ${
+                      statusFilter === key ? 'text-accent' : 'text-ink-secondary'
+                    }`}
+                  >
+                    {statusLabels[key]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button type="button" className="flex-1 sm:flex-none px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-ui-label text-ui-label flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors">
-            <Filter className="w-4 h-4" />
-            Status: All
-          </button>
-        </div>
-      </div>
 
-      {/* ── Contracts List ───────────────────────────────────────── */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-surface-container-low hidden md:table-header-group">
-            <tr>
-              <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Contract Title</th>
-              <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Counterparty</th>
-              <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Value</th>
-              <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Status</th>
-              <th className="py-3 px-6 font-ui-label text-xs uppercase tracking-wider text-on-surface-variant border-b border-outline-variant text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant">
-            {isLoading ? (
+        {/* Contracts List */}
+        <div className="bg-bg-base border border-edge-neutral shadow-neopop overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead>
               <tr>
-                <td colSpan={5} className="py-8 text-center text-on-surface-variant">
-                  <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-2" />
-                  <p className="font-ui-label">Loading contracts...</p>
-                </td>
+                <th className="py-5 px-6 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-2/5">Contract Title</th>
+                <th className="py-5 px-6 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-1/5">Counterparty</th>
+                <th className="py-5 px-6 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-1/5">Value</th>
+                <th className="py-5 px-6 font-mono-data text-[10px] uppercase tracking-widest text-ink-tertiary border-b-2 border-edge-neutral w-1/5 text-right">Status</th>
               </tr>
-            ) : contracts.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-16 px-4">
-                  <div className="max-w-md mx-auto text-center">
-                    <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-4 border border-outline-variant/50">
-                      <FileText className="w-8 h-8 text-on-surface-variant" />
-                    </div>
-                    <h3 className="text-xl font-headline-lg mb-2">No Contracts Found</h3>
-                    <p className="text-sm text-on-surface-variant mb-6">You don&apos;t have any active agreements or proposals yet. Create your first contract to get started.</p>
-                    <Link href="/dashboard/contracts/new" className="px-5 py-2.5 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary-hover transition-colors inline-flex items-center gap-2">
-                      <Plus className="w-4 h-4" /> Create Contract
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              contracts.map(contract => (
-                <tr 
-                  key={contract.id} 
-                  onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}
-                  className="hover:bg-surface-container-low/50 transition-colors flex flex-col md:table-row p-4 md:p-0 cursor-pointer"
-                >
-                  <td className="py-2 md:py-4 px-0 md:px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 hidden sm:flex">
-                        <FileText className="text-primary w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-ui-label text-sm font-semibold">{contract.title}</p>
-                        <p className="text-xs text-on-surface-variant mt-0.5">ID: {contract.id.substring(0, 8).toUpperCase()}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2 md:py-4 px-0 md:px-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
-                        {contract.freelancerWallet === publicKey ? "C" : "F"}
-                      </div>
-                      <span className="font-ui-label text-sm font-mono-data truncate w-24">
-                        {contract.freelancerWallet === publicKey ? contract.clientWallet : contract.freelancerWallet}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2 md:py-4 px-0 md:px-6 font-mono-data text-sm">
-                    {Number(contract.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
-                  </td>
-                  <td className="py-2 md:py-4 px-0 md:px-6">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      contract.isClosed ? "bg-surface-container-high text-on-surface-variant" :
-                      contract.isDisputed ? "bg-error/10 text-error border border-error/20" :
-                      "bg-secondary-container text-on-secondary-container"
-                    }`}>
-                      {contract.isClosed ? "Closed" : contract.isDisputed ? "Disputed" : "Active"}
-                    </span>
-                  </td>
-                  <td className="py-2 md:py-4 px-0 md:px-6 text-right">
-                    <button type="button" aria-label="More options" className="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-edge-neutral">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="py-16 text-center text-ink-tertiary">
+                    <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-4" />
+                    <p className="font-mono-data text-xs uppercase tracking-widest">Loading Contracts...</p>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filteredContracts.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-20 px-6 text-center">
+                    <div className="max-w-md mx-auto">
+                      <div className="w-20 h-20 bg-bg-void border-2 border-dashed border-ink-tertiary flex items-center justify-center mx-auto mb-6">
+                        <FileText className="w-8 h-8 text-ink-tertiary" />
+                      </div>
+                      <h3 className="font-headline-lg text-2xl font-bold mb-3">No Contracts Found</h3>
+                      <p className="font-ui-label text-ink-secondary text-sm mb-8">You don't have any active agreements or proposals yet.</p>
+                      <Link href="/dashboard/contracts/new" className="neopop-button-base inline-flex px-8 py-4 font-ui-label font-bold uppercase tracking-widest text-sm items-center gap-2">
+                        <Plus className="w-5 h-5" /> Create Contract
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredContracts.map(contract => (
+                  <tr 
+                    key={contract.id} 
+                    onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}
+                    className="group hover:bg-bg-void transition-colors cursor-pointer"
+                  >
+                    <td className="py-6 px-6 border-r border-dashed border-edge-neutral/50">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 border-2 border-ink-tertiary flex items-center justify-center shrink-0 group-hover:border-accent transition-colors">
+                          <FileText className="text-ink-secondary group-hover:text-accent w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-ui-label text-lg font-bold group-hover:text-accent transition-colors">{contract.title}</p>
+                          <p className="font-mono-data text-xs text-ink-secondary mt-1 uppercase tracking-widest">ID: {contract.id.substring(0, 8)}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-6 px-6 border-r border-dashed border-edge-neutral/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 border-2 border-ink-primary bg-ink-primary text-bg-base flex items-center justify-center font-bold text-xs uppercase font-mono-data">
+                          {contract.freelancerWallet === publicKey ? "C" : "F"}
+                        </div>
+                        <span className="font-mono-data text-sm text-ink-secondary truncate w-24">
+                          {contract.freelancerWallet === publicKey ? contract.clientWallet : contract.freelancerWallet}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-6 px-6 border-r border-dashed border-edge-neutral/50 font-mono-data text-lg font-bold">
+                      {Number(contract.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs text-ink-tertiary uppercase tracking-widest">USDC</span>
+                    </td>
+                    <td className="py-6 px-6 text-right">
+                      <div className="flex items-center justify-end gap-4">
+                        <span className={`inline-flex items-center px-3 py-1 text-[10px] font-bold uppercase tracking-widest border-2 ${
+                          contract.isClosed ? "border-ink-tertiary text-ink-secondary" :
+                          contract.isDisputed ? "border-status-disputed text-status-disputed bg-status-disputed/10" :
+                          "border-accent text-accent bg-accent/10"
+                        }`}>
+                          {contract.isClosed ? "Closed" : contract.isDisputed ? "Disputed" : "Active"}
+                        </span>
+                        <ChevronRight className="w-5 h-5 text-ink-tertiary group-hover:text-accent transition-colors" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

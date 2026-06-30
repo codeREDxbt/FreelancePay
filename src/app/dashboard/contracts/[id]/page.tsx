@@ -1,29 +1,42 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 import { useEscrow } from "@/hooks/useEscrow";
-import { getContract, updateMilestoneStatus } from "@/lib/firebase/contracts";
+import { getContract, updateMilestoneStatus, flagDispute } from "@/lib/firebase/contracts";
 import { ErrorBoundary } from "@/components/providers/error-boundary";
 import type { Contract, MilestoneStatus } from "@/types";
+import Link from "next/link";
 
-import { ArrowLeft, Loader2, CheckCircle2, AlertCircle, Clock, Link as LinkIcon, ShieldCheck } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ArrowLeft, Loader2, AlertCircle, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
+import { ChatWidget } from "@/components/dashboard/ChatWidget";
+import { ContractReviewWidget } from "@/components/dashboard/ContractReviewWidget";
 
 export default function ContractDetailPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { isConnected, publicKey } = useWallet();
   const contractAuto = useEscrow();
-  const { approveMilestone, isLoading: isEscrowLoading } = contractAuto;
+  const {
+    approveMilestone,
+    submitMilestone: onChainSubmitMilestone,
+    isLoading: isEscrowLoading,
+    flagDispute: onChainFlagDispute,
+    resolveDispute: onChainResolveDispute,
+    state: escrowState,
+  } = contractAuto;
 
   const [contract, setContract] = useState<Contract | null>(null);
   const [isFetching, setIsFetching] = useState(true);
   const [deliverableUrl, setDeliverableUrl] = useState("");
   const [isSubmittingWork, setIsSubmittingWork] = useState(false);
+  const [isDisputeFlowOpen, setIsDisputeFlowOpen] = useState(false);
+  const [isFlaggingDispute, setIsFlaggingDispute] = useState(false);
+  const [isResolvingDispute, setIsResolvingDispute] = useState(false);
+  const [resolveForm, setResolveForm] = useState({ releaseTo: "", amount: "" });
 
   useEffect(() => {
     if (!id) return;
@@ -50,18 +63,21 @@ export default function ContractDetailPage() {
   const isClient = contract?.clientWallet === publicKey;
   const isFreelancer = contract?.freelancerWallet === publicKey;
 
-  const currentStatus: MilestoneStatus | undefined = contract?.milestones?.[0]?.status;
+  const activeMilestoneIndex = contract?.milestones?.findIndex(m => m.status === "pending" || m.status === "submitted") ?? -1;
+  const activeMilestone = activeMilestoneIndex !== -1 ? contract?.milestones?.[activeMilestoneIndex] : null;
+  const currentStatus = activeMilestone?.status;
 
   const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deliverableUrl || !contract) return;
+    if (!deliverableUrl || !contract || activeMilestoneIndex === -1) return;
 
     setIsSubmittingWork(true);
     try {
-      await updateMilestoneStatus(contract.id, 0, "submitted", deliverableUrl);
+      await onChainSubmitMilestone(activeMilestoneIndex);
+      await updateMilestoneStatus(contract.id, activeMilestoneIndex, "submitted", deliverableUrl);
       setContract(prev => prev ? {
         ...prev,
-        milestones: prev.milestones.map((m, i) => i === 0 ? { ...m, status: "submitted" as const, deliverableUrl } : m)
+        milestones: prev.milestones.map((m, i) => i === activeMilestoneIndex ? { ...m, status: "submitted" as const, deliverableUrl } : m)
       } : null);
       toast.success("Work submitted for review!");
     } catch {
@@ -72,26 +88,75 @@ export default function ContractDetailPage() {
   };
 
   const handleApprove = async () => {
-    if (!contract) return;
+    if (!contract || activeMilestoneIndex === -1) return;
     try {
-      await approveMilestone(0);
+      await approveMilestone(activeMilestoneIndex);
       toast.success("Funds released successfully!");
-      setContract(prev => prev ? {
-        ...prev,
-        milestones: prev.milestones.map((m, i) => i === 0 ? { ...m, status: "approved" as const } : m)
-      } : null);
-      await updateMilestoneStatus(contract.id, 0, "approved");
+      setContract(prev => {
+        if (!prev) return null;
+        const newMilestones = prev.milestones.map((m, i) => i === activeMilestoneIndex ? { ...m, status: "approved" as const } : m);
+        const isClosed = newMilestones.every(m => m.status === "approved" || m.status === "released");
+        return {
+          ...prev,
+          milestones: newMilestones,
+          isClosed: prev.isClosed || isClosed
+        };
+      });
+      await updateMilestoneStatus(contract.id, activeMilestoneIndex, "approved");
     } catch { /* toast already shown by hook */ }
   };
 
+  const refreshContract = useCallback(async () => {
+    if (!contract?.id) return;
+    try {
+      const data = await getContract(contract.id);
+      if (data) setContract(data);
+    } catch {
+      /* keep current snapshot on read failure */
+    }
+  }, [contract]);
+
+  const handleFlagDispute = useCallback(async () => {
+    if (!contract) return;
+    setIsFlaggingDispute(true);
+    try {
+      await onChainFlagDispute();
+      try {
+        await flagDispute(contract.id);
+      } catch {
+        toast.error("On-chain dispute locked, but Firestore sync failed. Refresh to retry.");
+      }
+      await refreshContract();
+      toast.success("Dispute flagged. Funds are now locked.");
+      setIsDisputeFlowOpen(false);
+    } catch {
+      /* toast already shown by hook */
+    } finally {
+      setIsFlaggingDispute(false);
+    }
+  }, [contract, onChainFlagDispute, refreshContract]);
+
+  const handleResolveDispute = useCallback(async () => {
+    if (!contract || !resolveForm.releaseTo || !resolveForm.amount) return;
+    setIsResolvingDispute(true);
+    try {
+      await onChainResolveDispute(publicKey!, resolveForm.releaseTo, Number(resolveForm.amount));
+      setContract(prev => prev ? { ...prev, isDisputed: false, isClosed: true } : null);
+      toast.success("Dispute resolved and funds released.");
+    } catch { /* toast already shown by hook */ }
+    finally {
+      setIsResolvingDispute(false);
+    }
+  }, [contract, resolveForm, onChainResolveDispute, publicKey]);
+
   if (isFetching) {
     return (
-      <div className="px-4 md:px-margin-desktop py-8 max-w-4xl mx-auto space-y-8">
+      <div className="px-8 py-12 max-w-6xl mx-auto space-y-8">
         <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-40 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Skeleton className="h-64 w-full rounded-2xl" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-none" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Skeleton className="lg:col-span-2 h-64 w-full rounded-none" />
+          <Skeleton className="h-64 w-full rounded-none" />
         </div>
       </div>
     );
@@ -99,191 +164,287 @@ export default function ContractDetailPage() {
 
   if (!contract) {
     return (
-      <div className="px-4 md:px-margin-desktop py-20 max-w-4xl mx-auto text-center">
-        <AlertCircle className="w-12 h-12 text-error mx-auto mb-4" />
-        <h2 className="text-2xl font-headline-lg mb-2">Contract Not Found</h2>
-        <p className="text-on-surface-variant mb-6">The contract you are looking for does not exist or you don&apos;t have access.</p>
-        <button type="button" onClick={() => router.push("/dashboard")} className="text-primary hover:underline">
+      <div className="px-8 py-20 max-w-4xl mx-auto text-center flex flex-col items-center">
+        <AlertCircle className="w-12 h-12 text-status-disputed mx-auto mb-4" />
+        <h2 className="text-3xl font-headline-lg font-bold text-ink-primary mb-4">Contract Not Found</h2>
+        <p className="text-ink-secondary mb-8 font-ui-label">The contract does not exist or you lack access.</p>
+        <Link href="/dashboard" className="neopop-button-teal px-6 py-3 font-ui-label font-bold uppercase tracking-widest text-sm inline-block">
           Return to Dashboard
-        </button>
+        </Link>
       </div>
     );
   }
 
-  const statusLabel = currentStatus === "pending" ? "In Progress"
-    : currentStatus === "approved" ? "Completed"
-    : currentStatus === "submitted" ? "In Review"
-    : "Scheduled";
-
   return (
     <ErrorBoundary>
-      <div className="px-4 md:px-margin-desktop py-8 max-w-5xl mx-auto">
-        <button type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-colors mb-6 font-ui-label text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-        </button>
+      <div className="p-4 md:p-8 lg:p-12 max-w-full lg:max-w-7xl mx-auto bg-bg-void min-h-screen text-ink-primary overflow-x-hidden">
+        
+        <Link href="/dashboard/contracts" className="flex items-center gap-2 text-ink-tertiary hover:text-ink-primary transition-colors font-ui-label text-sm font-bold uppercase tracking-widest mb-8 md:mb-12 w-fit">
+          <ArrowLeft className="w-4 h-4" /> Back to Contracts
+        </Link>
 
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="font-headline-lg text-3xl text-on-surface">{contract.title}</h1>
-              <StatusBadge status={statusLabel} />
-            </div>
-            <p className="text-on-surface-variant font-body-base max-w-2xl">{contract.description}</p>
-          </div>
-
-          <div className="bg-surface-container-low border border-outline-variant rounded-xl p-4 min-w-[200px] text-right">
-            <p className="font-ui-label text-[10px] uppercase tracking-widest text-outline-variant mb-1">Contract Value</p>
-            <p className="font-mono-data text-2xl font-bold text-primary">{contract.totalAmount} USDC</p>
-            <p className="text-xs text-on-surface-variant mt-1">Locked in Soroban Escrow</p>
-          </div>
+        <div className="mb-12">
+          <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">{contract.title}</h1>
+          <p className="text-ink-secondary font-ui-label text-lg max-w-3xl">{contract.description}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:flex-row gap-12">
+          
+          {/* Timeline on the left */}
+          <div className="flex-1 space-y-8">
+            <h2 className="font-headline-lg text-2xl font-bold border-b-2 border-edge-neutral pb-4 uppercase tracking-widest">Milestones</h2>
+            
+            <div className="relative border-l border-ink-tertiary/30 ml-4 space-y-12 pb-8">
+              {contract.milestones?.map((m, index) => {
+                const isCompleted = m.status === "approved" || m.status === "released";
+                const isActive = m.status === "pending" || m.status === "submitted";
+                const isDisputed = contract.isDisputed;
+                
+                // Neon thread effect for active/completed
+                const showNeonThread = isCompleted || (isActive && m.status === "submitted");
 
-          <div className="md:col-span-2 space-y-8">
+                return (
+                  <div key={m.id} className="relative pl-8">
+                    {/* Neon Thread filling the past border */}
+                    {showNeonThread && (
+                      <div className="absolute -left-[1px] -top-12 bottom-0 w-[2px] bg-accent shadow-[0_0_10px_rgba(0,255,200,0.8)] z-10" />
+                    )}
 
-            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
-              <h2 className="font-section-title text-lg mb-4 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-primary" /> Parties Involved
-              </h2>
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant/50">
-                  <div>
-                    <p className="font-ui-label text-xs uppercase text-on-surface-variant tracking-wider mb-1">Client</p>
-                    <p className="font-mono-data text-sm">{contract.clientWallet}</p>
-                  </div>
-                  {isClient && <span className="mt-2 sm:mt-0 text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-bold">You</span>}
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant/50">
-                  <div>
-                    <p className="font-ui-label text-xs uppercase text-on-surface-variant tracking-wider mb-1">Freelancer</p>
-                    <p className="font-mono-data text-sm">{contract.freelancerWallet}</p>
-                  </div>
-                  {isFreelancer && <span className="mt-2 sm:mt-0 text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-bold">You</span>}
-                </div>
-              </div>
-            </section>
+                    {/* Timeline Node */}
+                    <div className={`absolute -left-[7px] top-1.5 w-3 h-3 rounded-full z-20 ${
+                      isCompleted ? 'bg-accent shadow-[0_0_8px_rgba(0,255,200,0.8)]' : 
+                      isActive ? 'bg-bg-base border-2 border-accent shadow-[0_0_12px_rgba(0,255,200,0.5)]' : 
+                      'bg-bg-base border-2 border-ink-tertiary'
+                    }`} />
 
-            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
-              <h2 className="font-section-title text-lg mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-on-surface-variant" /> Milestone Tracker
-              </h2>
-              <div className="relative border-l-2 border-outline-variant ml-4 space-y-8 pb-4">
-                {contract.milestones?.map((m) => {
-                  const isCompleted = m.status === "approved" || m.status === "released";
-
-                  return (
-                    <div key={m.id} className="relative pl-6">
-                      <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-surface-container-lowest ${isCompleted ? 'bg-primary' : 'bg-outline-variant'}`}></div>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="bg-bg-base border border-edge-neutral p-6 shadow-neopop group hover:border-accent/50 transition-colors">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                         <div>
-                          <h3 className={`font-ui-label font-bold ${isCompleted ? 'text-on-surface-variant line-through' : 'text-on-surface'}`}>{m.description}</h3>
+                          <h3 className={`font-ui-label font-bold text-lg mb-1 uppercase tracking-widest ${isCompleted ? 'text-ink-secondary line-through' : 'text-ink-primary'}`}>
+                            {m.description}
+                          </h3>
+                          <p className="font-mono-data text-ink-secondary text-sm uppercase tracking-wider flex items-center gap-2">
+                            Status: <span className={isCompleted ? 'text-accent' : isActive ? 'text-ink-primary' : ''}>{m.status}</span>
+                            {(() => {
+                              const onChainTag = escrowState?.milestones?.[index]?.status?.tag?.toLowerCase();
+                              if (onChainTag === "approved" || onChainTag === "released") {
+                                return (
+                                  <span className="inline-flex items-center gap-1 bg-accent/10 border border-accent/30 text-accent px-2 py-0.5 text-[10px] rounded-full">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                                    Verified On-Chain
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </p>
+
                           {m.deliverableUrl && (
-                            <a href={m.deliverableUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline mt-2 w-fit">
-                              <LinkIcon className="w-3 h-3" /> View Deliverable
+                            <a href={m.deliverableUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 text-accent hover:text-white font-ui-label text-sm uppercase tracking-widest font-bold underline decoration-accent/50 underline-offset-4">
+                              View Deliverable
                             </a>
                           )}
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-mono-data font-bold">{m.amount} USDC</p>
-                          <p className="text-xs text-on-surface-variant uppercase tracking-wider mt-1">{isCompleted ? 'Released' : 'Locked'}</p>
+                          <p className="font-mono-data font-bold text-2xl">{Number(m.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} <span className="text-sm text-ink-tertiary">USDC</span></p>
+                          <p className="text-xs text-ink-secondary uppercase tracking-widest mt-1">
+                            {isCompleted ? 'Released' : isDisputed ? 'Locked (Dispute)' : 'Locked'}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 sticky top-24">
-              <h3 className="font-section-title text-lg mb-2">Action Required</h3>
-
-              {!isConnected ? (
-                <p className="text-sm text-on-surface-variant mb-4">Please connect your wallet to manage this contract.</p>
-              ) : isClient ? (
-                <div className="space-y-4">
-                  {currentStatus === "pending" ? (
-                    <>
-                      <p className="text-sm text-on-surface-variant mb-4">Waiting for the freelancer to submit their work.</p>
-                      <div className="p-3 bg-surface-container-low rounded-lg border border-outline-variant/50 text-xs text-on-surface-variant flex gap-2">
-                        <Clock className="w-4 h-4 shrink-0" />
-                        Funds are securely locked in the Soroban smart contract until you approve.
-                      </div>
-                    </>
-                  ) : currentStatus === "submitted" ? (
-                    <>
-                      <p className="text-sm text-on-surface mb-4 font-medium">The freelancer has submitted work for your review!</p>
-                      <button type="button"
-                        onClick={handleApprove}
-                        disabled={isEscrowLoading}
-                        className="w-full py-3 bg-primary text-on-primary rounded-xl font-bold btn-primary-inset flex items-center justify-center gap-2 hover:bg-primary-hover transition-colors disabled:opacity-50"
-                      >
-                        {isEscrowLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                        Approve & Release Funds
-                      </button>
-                      <button type="button" className="w-full py-2.5 text-error font-ui-label text-sm hover:bg-error/10 rounded-lg transition-colors mt-2">
-                        Request Revision or Dispute
-                      </button>
-                    </>
-                  ) : (
-                    <div className="text-center py-4">
-                      <CheckCircle2 className="w-12 h-12 text-primary mx-auto mb-2" />
-                      <p className="font-bold text-on-surface">Contract Completed</p>
-                      <p className="text-xs text-on-surface-variant mt-1">Funds have been released.</p>
-                    </div>
-                  )}
-                </div>
-              ) : isFreelancer ? (
-                <div className="space-y-4">
-                  {currentStatus === "pending" ? (
-                    <form onSubmit={handleSubmitWork} className="space-y-4">
-                      <p className="text-sm text-on-surface-variant mb-4">The client has funded this milestone. Submit your work when ready.</p>
-                      <div className="space-y-2">
-                        <label htmlFor="deliverableUrl" className="font-ui-label text-xs uppercase text-on-surface-variant tracking-wider">Deliverable URL</label>
-                        <input
-                          id="deliverableUrl"
-                          required
-                          type="url"
-                          value={deliverableUrl}
-                          onChange={(e) => setDeliverableUrl(e.target.value)}
-                          placeholder="https://..."
-                          className="w-full px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={isSubmittingWork || !deliverableUrl}
-                        className="w-full py-3 bg-primary text-on-primary rounded-xl font-bold btn-primary-inset flex items-center justify-center gap-2 hover:bg-primary-hover transition-colors disabled:opacity-50"
-                      >
-                        {isSubmittingWork ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit for Review"}
-                      </button>
-                    </form>
-                  ) : currentStatus === "submitted" ? (
-                    <div className="text-center py-4">
-                      <Clock className="w-12 h-12 text-outline mx-auto mb-2" />
-                      <p className="font-bold text-on-surface">Pending Client Review</p>
-                      <p className="text-xs text-on-surface-variant mt-1">Waiting for the client to approve and release funds.</p>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <CheckCircle2 className="w-12 h-12 text-primary mx-auto mb-2" />
-                      <p className="font-bold text-on-surface">Contract Completed</p>
-                      <p className="text-xs text-on-surface-variant mt-1">Funds have been released to your wallet.</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-on-surface-variant">You are viewing this contract as a guest. You do not have permission to manage it.</p>
-              )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
+          {/* Context Panel on the right */}
+          <div className="w-full lg:w-[420px] space-y-8 shrink-0">
+            
+            {/* Contract Context */}
+            <div className="bg-bg-base border border-edge-neutral shadow-neopop p-6">
+              <h3 className="font-mono-data text-ink-primary font-bold uppercase tracking-widest text-sm mb-6 pb-2 border-b border-dashed border-ink-tertiary">Contract Details</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <p className="font-ui-label text-[10px] text-ink-tertiary uppercase tracking-widest mb-1">Total Value</p>
+                  <p className="font-mono-data font-bold text-3xl tabular-nums text-accent">{Number(contract.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} USDC</p>
+                </div>
+                
+                <div>
+                  <p className="font-ui-label text-[10px] text-ink-tertiary uppercase tracking-widest mb-1">Client</p>
+                  <p className="font-mono-data text-xs break-all text-ink-secondary">{contract.clientWallet}</p>
+                  {isClient && <span className="inline-block mt-2 bg-ink-primary text-bg-base px-2 py-0.5 font-ui-label text-[10px] uppercase font-bold tracking-widest">You</span>}
+                </div>
+                
+                <div>
+                  <p className="font-ui-label text-[10px] text-ink-tertiary uppercase tracking-widest mb-1">Freelancer</p>
+                  <p className="font-mono-data text-xs break-all text-ink-secondary">{contract.freelancerWallet}</p>
+                  {isFreelancer && <span className="inline-block mt-2 bg-ink-primary text-bg-base px-2 py-0.5 font-ui-label text-[10px] uppercase font-bold tracking-widest">You</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Panel */}
+            <div className="bg-bg-base border border-edge-neutral shadow-neopop p-6">
+              <h3 className="font-mono-data text-ink-primary font-bold uppercase tracking-widest text-sm mb-6 pb-2 border-b border-dashed border-ink-tertiary">
+                {activeMilestone ? `Action: Milestone ${activeMilestone.id}` : 'Actions'}
+              </h3>
+              
+              {!isConnected ? (
+                <p className="font-ui-label text-sm text-ink-secondary">Connect wallet to manage.</p>
+              ) : contract.isDisputed ? (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 text-status-disputed border border-status-disputed/30 bg-status-disputed/10 p-4">
+                    <ShieldAlert className="w-6 h-6 shrink-0" />
+                    <span className="font-ui-label font-bold uppercase tracking-widest text-sm">Dispute Active</span>
+                  </div>
+                  {isClient ? (
+                    <div className="space-y-4">
+                      <p className="text-xs font-ui-label text-ink-secondary">Resolve dispute by specifying recipient and amount.</p>
+                      <input
+                        type="text"
+                        value={resolveForm.releaseTo}
+                        onChange={(e) => setResolveForm(prev => ({ ...prev, releaseTo: e.target.value }))}
+                        placeholder="Release To (G...)"
+                        className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-mono-data text-sm transition-colors"
+                      />
+                      <input
+                        type="number"
+                        value={resolveForm.amount}
+                        onChange={(e) => setResolveForm(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="Amount (USDC)"
+                        className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-mono-data text-sm transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleResolveDispute}
+                        disabled={isResolvingDispute || !resolveForm.releaseTo || !resolveForm.amount}
+                        className="w-full py-4 bg-status-disputed text-black font-ui-label font-bold uppercase tracking-widest text-sm flex justify-center items-center gap-2 hover:bg-opacity-90 disabled:opacity-50 mt-4"
+                      >
+                        {isResolvingDispute ? <Loader2 className="w-5 h-5 animate-spin" /> : "Resolve Dispute"}
+                      </button>
+                    </div>
+                  ) : isFreelancer ? (
+                    <p className="text-xs font-ui-label text-ink-secondary">Awaiting resolution from the client.</p>
+                  ) : null}
+                </div>
+              ) : isClient ? (
+                <div className="space-y-6">
+                  {currentStatus === "pending" ? (
+                    <div className="text-center p-6 border border-dashed border-ink-tertiary">
+                      <p className="font-ui-label text-sm text-ink-secondary uppercase tracking-widest">Awaiting Submission</p>
+                    </div>
+                  ) : currentStatus === "submitted" ? (
+                    <>
+                      <div className="p-4 bg-accent/10 border border-accent/20 mb-6">
+                        <p className="font-ui-label text-sm text-accent font-bold uppercase tracking-widest">Work Submitted</p>
+                      </div>
+                      
+                      <button type="button"
+                        onClick={handleApprove}
+                        disabled={isEscrowLoading}
+                        className="neopop-button-teal w-full py-5 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isEscrowLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Approve & Release Funds"}
+                      </button>
+
+                      {isDisputeFlowOpen ? (
+                        <div className="mt-6 p-4 border border-status-disputed/30 bg-status-disputed/5 space-y-4">
+                          <p className="font-ui-label text-sm font-bold text-status-disputed uppercase tracking-widest">Confirm Dispute</p>
+                          <p className="text-xs font-mono-data text-ink-secondary">This will lock all funds until resolved.</p>
+                          <div className="flex gap-4 pt-2">
+                            <button
+                              type="button"
+                              onClick={handleFlagDispute}
+                              disabled={isFlaggingDispute}
+                              className="flex-1 py-3 bg-status-disputed text-black font-ui-label font-bold text-xs uppercase tracking-widest disabled:opacity-50"
+                            >
+                              {isFlaggingDispute ? "Processing..." : "Flag"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setIsDisputeFlowOpen(false)}
+                              className="flex-1 py-3 border border-ink-tertiary text-ink-primary font-ui-label font-bold text-xs uppercase tracking-widest hover:bg-ink-tertiary/20"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsDisputeFlowOpen(true)}
+                          className="w-full mt-4 py-3 border border-status-disputed/50 text-status-disputed font-ui-label font-bold uppercase tracking-widest text-xs hover:bg-status-disputed/10 transition-colors"
+                        >
+                          Request Revision / Dispute
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center p-6 border border-dashed border-accent">
+                      <p className="font-ui-label text-sm text-accent font-bold uppercase tracking-widest">Completed</p>
+                    </div>
+                  )}
+                  {contract.isClosed && (
+                    <ContractReviewWidget 
+                      contractId={contract.id} 
+                      recipientWallet={contract.freelancerWallet} 
+                    />
+                  )}
+                </div>
+              ) : isFreelancer ? (
+                <div className="space-y-6">
+                  {currentStatus === "pending" ? (
+                    <form onSubmit={handleSubmitWork} className="space-y-6">
+                      <input
+                        type="url"
+                        required
+                        value={deliverableUrl}
+                        onChange={(e) => setDeliverableUrl(e.target.value)}
+                        placeholder="Deliverable URL (https://...)"
+                        className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-mono-data text-sm transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSubmittingWork || !deliverableUrl}
+                        className="neopop-button-teal w-full py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isSubmittingWork ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit Work"}
+                      </button>
+                    </form>
+                  ) : currentStatus === "submitted" ? (
+                    <div className="text-center p-6 border border-dashed border-ink-tertiary">
+                      <p className="font-ui-label text-sm text-ink-secondary uppercase tracking-widest mb-1">In Review</p>
+                      <p className="font-mono-data text-xs text-ink-tertiary">Awaiting client approval</p>
+                    </div>
+                  ) : (
+                    <div className="text-center p-6 border border-dashed border-accent">
+                      <p className="font-ui-label text-sm text-accent font-bold uppercase tracking-widest">Completed</p>
+                      <p className="font-mono-data text-xs text-ink-tertiary mt-2">Funds Released</p>
+                    </div>
+                  )}
+                  {contract.isClosed && (
+                    <ContractReviewWidget 
+                      contractId={contract.id} 
+                      recipientWallet={contract.clientWallet} 
+                    />
+                  )}
+                </div>
+              ) : (
+                <p className="font-ui-label text-sm text-ink-secondary">Guest View (No actions available)</p>
+              )}
+            </div>
+
+            {/* Chat Widget */}
+            <div className="mt-8">
+              <ChatWidget contractId={contract.id} />
+            </div>
+
+          </div>
         </div>
+
       </div>
     </ErrorBoundary>
   );

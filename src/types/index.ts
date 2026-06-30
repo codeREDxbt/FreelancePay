@@ -44,14 +44,15 @@ export interface ActivityItem {
   desc: string;
   date: number;
   time: string;
+  txHash?: string;
+  explorerUrl?: string;
 }
 
 export interface NewContractFormData {
   title: string;
   description: string;
-  amount: string;
   freelancerAddress: string;
-  deliverableUrl: string;
+  milestones: { description: string; amount: string; deliverableUrl?: string }[];
 }
 
 export interface AccountBalanceResult {

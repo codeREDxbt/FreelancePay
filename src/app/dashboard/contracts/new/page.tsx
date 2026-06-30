@@ -2,51 +2,31 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { createContract } from "@/lib/firebase/contracts";
 import { useWallet } from "@/hooks/useWallet";
 import { useEscrow } from "@/hooks/useEscrow";
 import { ErrorBoundary } from "@/components/providers/error-boundary";
 import { m, AnimatePresence } from 'framer-motion';
-import { Step1Counterparty, Step2Details, Step3Terms, Step4Review } from "@/components/dashboard/contracts-new-components";
 import type { NewContractFormData } from "@/types";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
-};
-
-const steps = [
-  { id: 1, label: "Counterparty" },
-  { id: 2, label: "Details" },
-  { id: 3, label: "Terms" },
-  { id: 4, label: "Review" },
-];
+import Link from "next/link";
 
 export default function NewContractPage() {
   const router = useRouter();
   const { publicKey } = useWallet();
   const { initializeEscrow } = useEscrow();
 
-  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<NewContractFormData>({
     title: "",
     description: "",
-    amount: "",
     freelancerAddress: "",
-    deliverableUrl: "",
+    milestones: [{ description: "", amount: "", deliverableUrl: "" }],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (currentStep < 4) {
-      setCurrentStep(prev => prev + 1);
-      return;
-    }
 
     if (!publicKey) {
       setError("You must be logged in to create a contract");
@@ -56,32 +36,34 @@ export default function NewContractPage() {
     setIsLoading(true);
     setError(null);
     try {
+      const milestoneAmounts = formData.milestones.map(m => parseFloat(m.amount || "0"));
+      const milestoneDescriptions = formData.milestones.map(m => m.description);
+      const totalAmount = milestoneAmounts.reduce((a, b) => a + b, 0);
+
       const result = await initializeEscrow(
         formData.freelancerAddress,
-        [parseFloat(formData.amount)],
-        [formData.description]
+        milestoneAmounts,
+        milestoneDescriptions
       );
 
-      const txHash = (result as { hash?: string }).hash || "pending";
+      const txHash = (result as { hash?: string })?.hash || "pending";
 
       await createContract({
         clientWallet: publicKey,
         freelancerWallet: formData.freelancerAddress,
         title: formData.title,
         description: formData.description,
-        totalAmount: parseFloat(formData.amount),
+        totalAmount,
         contractAddress: txHash,
         isDisputed: false,
         isClosed: false,
-        milestones: [
-          {
-            id: 1,
-            description: "Initial Deliverable",
-            amount: parseFloat(formData.amount),
-            status: "pending",
-            deliverableUrl: formData.deliverableUrl || undefined,
-          }
-        ]
+        milestones: formData.milestones.map((m, idx) => ({
+          id: idx + 1,
+          description: m.description || `Milestone ${idx + 1}`,
+          amount: parseFloat(m.amount || "0"),
+          status: "pending",
+          deliverableUrl: m.deliverableUrl || undefined,
+        }))
       });
 
       router.push("/dashboard/contracts");
@@ -97,90 +79,255 @@ export default function NewContractPage() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleMilestoneChange = (index: number, field: string, value: string) => {
+    setFormData(prev => {
+      const newMilestones = [...prev.milestones];
+      newMilestones[index] = { ...newMilestones[index], [field]: value };
+      return { ...prev, milestones: newMilestones };
+    });
+  };
+
+  const addMilestone = () => {
+    setFormData(prev => ({
+      ...prev,
+      milestones: [...prev.milestones, { description: "", amount: "", deliverableUrl: "" }]
+    }));
+  };
+
+  const removeMilestone = (index: number) => {
+    if (formData.milestones.length <= 1) return;
+    setFormData(prev => ({
+      ...prev,
+      milestones: prev.milestones.filter((_, i) => i !== index)
+    }));
+  };
+
+  const totalCalculated = formData.milestones.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
   return (
     <ErrorBoundary>
-      <div className="flex-grow flex flex-col items-center py-12 px-4 md:px-margin-desktop">
-        <div className="w-full max-w-[640px]">
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] bg-bg-void text-ink-primary">
+        
+        {/* Left Pane: Active Form */}
+        <div className="flex-1 p-8 lg:p-16 pb-24 lg:pb-32 flex flex-col max-w-2xl mx-auto lg:mx-0 w-full">
+          <Link href="/dashboard" className="flex items-center gap-2 text-ink-tertiary hover:text-ink-primary transition-colors font-ui-label text-sm font-bold uppercase tracking-widest mb-12 w-fit">
+            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          </Link>
+          
+          <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">Create Contract</h1>
+          <p className="text-ink-secondary mb-12 font-ui-label">Configure the parameters for your escrowed agreement.</p>
 
-          <div className="mb-12">
-            <div className="flex items-center justify-between relative">
-              <div className="absolute top-5 left-0 w-full h-[2px] bg-surface-container-highest z-0"></div>
-              <div
-                className="absolute top-5 left-0 h-[2px] bg-primary z-0 transition-all duration-500"
-                style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-              ></div>
+          <form onSubmit={handleSubmit} className="space-y-12">
+            
+            {/* Field: Freelancer Address */}
+            <div className="space-y-4">
+              <label htmlFor="freelancerAddress" className="block font-ui-label text-sm uppercase tracking-widest font-bold text-ink-primary">Counterparty Address</label>
+              <input
+                id="freelancerAddress"
+                required
+                name="freelancerAddress"
+                value={formData.freelancerAddress}
+                onChange={handleChange}
+                className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-mono-data text-lg transition-colors placeholder:text-ink-tertiary"
+                placeholder="G..."
+              />
+            </div>
 
-              {steps.map((step) => {
-                const isCompleted = currentStep > step.id;
-                const isActive = currentStep === step.id;
+            {/* Field: Title */}
+            <div className="space-y-4">
+              <label htmlFor="title" className="block font-ui-label text-sm uppercase tracking-widest font-bold text-ink-primary">Contract Title</label>
+              <input
+                id="title"
+                required
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-ui-label text-xl font-bold transition-colors placeholder:text-ink-tertiary"
+                placeholder="e.g. Q4 Website Development"
+              />
+            </div>
 
-                return (
-                  <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-colors duration-300 ${
-                      isCompleted ? "bg-primary-container text-on-primary-container" :
-                      isActive ? "bg-primary text-on-primary ring-4 ring-primary/10" :
-                      "bg-surface-container-high text-on-surface-variant"
-                    }`}>
-                      {isCompleted ? <Check className="w-5 h-5" /> : <span className="font-mono-data text-[14px]">0{step.id}</span>}
+            {/* Field: Scope */}
+            <div className="space-y-4">
+              <label htmlFor="description" className="block font-ui-label text-sm uppercase tracking-widest font-bold text-ink-primary">Scope of Work</label>
+              <textarea
+                id="description"
+                required
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-ui-label text-lg transition-colors placeholder:text-ink-tertiary resize-none"
+                placeholder="Briefly outline deliverables..."
+              />
+            </div>
+
+            {/* Milestones Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b-2 border-edge-neutral pb-4">
+                <label className="block font-ui-label text-sm uppercase tracking-widest font-bold text-ink-primary">Milestones</label>
+                <button
+                  type="button"
+                  onClick={addMilestone}
+                  className="text-accent hover:text-accent/80 font-ui-label text-xs uppercase tracking-widest flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add Milestone
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                {formData.milestones.map((milestone, idx) => (
+                  <div key={idx} className="relative p-6 border-2 border-edge-neutral bg-black/5 hover:border-accent transition-colors">
+                    {formData.milestones.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMilestone(idx)}
+                        className="absolute top-4 right-4 text-ink-tertiary hover:text-status-disputed transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    
+                    <div className="mb-4">
+                      <span className="font-mono-data text-xs uppercase tracking-widest text-ink-secondary">Milestone {idx + 1}</span>
                     </div>
-                    <span className={`font-ui-label text-[12px] uppercase tracking-tighter ${
-                      isActive ? "text-primary font-bold" : "text-on-surface-variant"
-                    }`}>
-                      {step.label}
-                    </span>
+
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="block font-ui-label text-xs uppercase tracking-widest text-ink-primary">Deliverable Description</label>
+                        <input
+                          required
+                          value={milestone.description}
+                          onChange={(e) => handleMilestoneChange(idx, 'description', e.target.value)}
+                          className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-2 font-ui-label text-sm transition-colors placeholder:text-ink-tertiary"
+                          placeholder="e.g. Design Mockups"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="block font-ui-label text-xs uppercase tracking-widest text-ink-primary">Value (USDC)</label>
+                          <div className="relative">
+                            <span className="absolute left-0 top-2 font-mono-data text-ink-tertiary text-lg">$</span>
+                            <input
+                              required
+                              type="number"
+                              step="0.01"
+                              min="0.1"
+                              value={milestone.amount}
+                              onChange={(e) => handleMilestoneChange(idx, 'amount', e.target.value)}
+                              className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-2 pl-5 pr-4 font-mono-data text-lg font-bold tabular-nums transition-colors placeholder:text-ink-tertiary"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block font-ui-label text-xs uppercase tracking-widest text-ink-primary">Deliverable URL (Optional)</label>
+                          <input
+                            type="url"
+                            value={milestone.deliverableUrl || ""}
+                            onChange={(e) => handleMilestoneChange(idx, 'deliverableUrl', e.target.value)}
+                            className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-2 font-mono-data text-xs transition-colors placeholder:text-ink-tertiary"
+                            placeholder="https://..."
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {error && (
+                <m.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-4 bg-status-disputed/10 border border-status-disputed/20 text-status-disputed font-ui-label text-sm font-bold uppercase tracking-wider"
+                >
+                  {error}
+                </m.div>
+              )}
+            </AnimatePresence>
+
+            <div className="pt-8 flex items-center justify-end">
+              <button
+                type="submit"
+                disabled={isLoading || totalCalculated <= 0 || !formData.freelancerAddress || formData.milestones.some(m => !m.description || !m.amount)}
+                className="neopop-button-teal px-8 py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> :
+                 <>Execute Contract <ArrowRight className="w-5 h-5" /></>}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Right Pane: Receipt Preview */}
+        <div className="lg:w-[480px] bg-black border-t lg:border-t-0 lg:border-l border-dashed border-ink-tertiary relative">
+          <div className="p-8 lg:p-12 lg:sticky lg:top-0 lg:h-screen flex flex-col justify-center overflow-hidden">
+          
+          {/* Subtle noise/texture for the receipt side if wanted, but black is fine */}
+          
+          <div className="w-full max-w-[380px] mx-auto bg-bg-base border border-ink-tertiary p-8 relative">
+            {/* Top Cutout decoration for receipt */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-2">
+              {Array.from({length: 12}).map((_, i) => (
+                <div key={i} className="w-3 h-3 bg-black rounded-full" />
+              ))}
+            </div>
+
+            <div className="text-center mb-8 pt-4">
+              <h3 className="font-mono-data text-ink-primary font-bold tracking-widest uppercase text-xl">Escrow Receipt</h3>
+              <p className="font-mono-data text-ink-tertiary text-[10px] uppercase mt-2">FreelancePay Protocol</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="border-b border-dashed border-ink-tertiary pb-6">
+                <p className="font-mono-data text-[10px] text-ink-tertiary uppercase tracking-widest mb-1">Contract Title</p>
+                <p className="font-ui-label text-ink-primary font-bold text-lg break-words">
+                  {formData.title || "Untiled Contract"}
+                </p>
+              </div>
+
+              <div className="border-b border-dashed border-ink-tertiary pb-6">
+                <p className="font-mono-data text-[10px] text-ink-tertiary uppercase tracking-widest mb-1">Counterparty</p>
+                <p className="font-mono-data text-ink-secondary text-xs break-all">
+                  {formData.freelancerAddress || "--------------------------------------------------------"}
+                </p>
+              </div>
+
+              <div className="border-b border-dashed border-ink-tertiary pb-6">
+                <p className="font-mono-data text-[10px] text-ink-tertiary uppercase tracking-widest mb-1">Scope</p>
+                <p className="font-ui-label text-ink-secondary text-sm break-words line-clamp-3">
+                  {formData.description || "..."}
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <div className="flex items-end justify-between">
+                  <p className="font-mono-data text-[10px] text-ink-tertiary uppercase tracking-widest">Total Value</p>
+                  <p className="font-mono-data font-bold text-accent text-3xl tabular-nums tracking-tighter">
+                    {totalCalculated > 0 ? totalCalculated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
+                  </p>
+                </div>
+                <div className="flex justify-end mt-1">
+                  <span className="font-mono-data text-ink-tertiary text-xs uppercase tracking-wider">USDC</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Cutout decoration for receipt */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+              {Array.from({length: 12}).map((_, i) => (
+                <div key={i} className="w-3 h-3 bg-black rounded-full" />
+              ))}
             </div>
           </div>
-
-          <div className="bg-surface border border-outline-variant/50 p-8 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
-            <AnimatePresence mode="wait">
-              <m.div
-                key={currentStep}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                variants={fadeUp}
-              >
-                <form onSubmit={handleSubmit} className="space-y-6">
-
-                  {currentStep === 1 && <Step1Counterparty formData={formData} handleChange={handleChange} />}
-                  {currentStep === 2 && <Step2Details formData={formData} handleChange={handleChange} />}
-                  {currentStep === 3 && <Step3Terms formData={formData} handleChange={handleChange} />}
-                  {currentStep === 4 && <Step4Review formData={formData} handleChange={handleChange} error={error} />}
-
-                  <div className="pt-8 mt-8 border-t border-outline-variant/30 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (currentStep === 1) {
-                          router.back();
-                        } else {
-                          setCurrentStep(prev => prev - 1);
-                        }
-                      }}
-                      className="px-5 py-2.5 text-on-surface-variant hover:bg-surface-container-low rounded-lg font-ui-label text-sm font-semibold transition-colors flex items-center gap-2"
-                    >
-                      {currentStep === 1 ? "Cancel" : <><ArrowLeft className="w-4 h-4" /> Back</>}
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-ui-label text-sm font-bold hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none btn-primary-inset"
-                    >
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                       currentStep === 4 ? <><Check className="w-4 h-4" /> Sign & Create Contract</> :
-                       <>Next <ArrowRight className="w-4 h-4" /></>}
-                    </button>
-                  </div>
-
-                </form>
-              </m.div>
-            </AnimatePresence>
           </div>
         </div>
+
       </div>
     </ErrorBoundary>
   );
