@@ -54,6 +54,9 @@ FreelancePay/
 ### Contracts & Milestones
 ![Contracts](./public/Contracts.png)
 
+### Stellar Smart Contract
+![Stellar Contract](./public/Stellar%20contract.png)
+
 ### Payments
 ![Payments](./public/Payments.png)
 
