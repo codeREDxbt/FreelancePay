@@ -334,6 +334,18 @@ export function useWallet() {
     const kit = getKit();
     if (kit) { try { kit.setWallet(""); } catch { /* ignore */ } }
     setState(DEFAULT_STATE);
+    
+    try {
+      if (typeof window !== 'undefined') {
+        import("posthog-js").then(({ default: ph }) => {
+          if (ph) {
+            ph.reset();
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("Analytics error", e);
+    }
   }, []);
 
   const sign = useCallback(

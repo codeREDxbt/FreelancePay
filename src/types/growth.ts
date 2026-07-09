@@ -3,13 +3,13 @@ import { Timestamp } from 'firebase/firestore';
 export interface FeedbackEntry {
   id?: string;
   walletAddress: string;
-  email: string;
-  role: 'client' | 'freelancer' | 'both';
+  email?: string;
+  role?: 'client' | 'freelancer' | 'both';
   rating: number;
-  confusionPoint: string;
-  requestedFeature: string;
-  completedAction: string[];
-  wouldUseAgain: 'yes' | 'no' | 'maybe';
+  confusionPoint?: string;
+  requestedFeature?: string;
+  completedAction?: string[];
+  wouldUseAgain?: 'yes' | 'no' | 'maybe';
   txHash?: string;
   createdAt: Timestamp | Date;
 }

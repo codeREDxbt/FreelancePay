@@ -100,6 +100,7 @@ export default function ContractDetailPage() {
       } : null);
       if (publicKey) trackMilestoneSubmitted(publicKey, contract.id, activeMilestoneIndex);
       toast.success("Work submitted for review!");
+      window.dispatchEvent(new CustomEvent('open-feedback-modal', { detail: { action: 'submit_milestone' } }));
     } catch {
       toast.error("Failed to submit work. Please try again.");
     } finally {
@@ -120,6 +121,7 @@ export default function ContractDetailPage() {
         trackMilestoneApproved(publicKey, contract.id, activeMilestoneIndex);
       }
       toast.success("Funds released successfully!");
+      window.dispatchEvent(new CustomEvent('open-feedback-modal', { detail: { action: 'approve_milestone' } }));
       setContract(prev => {
         if (!prev) return null;
         const newMilestones = prev.milestones.map((m, i) => i === activeMilestoneIndex ? { ...m, status: "approved" as const } : m);
@@ -172,6 +174,7 @@ export default function ContractDetailPage() {
       await onChainResolveDispute(publicKey!, resolveForm.releaseTo, Number(resolveForm.amount));
       setContract(prev => prev ? { ...prev, isDisputed: false, isClosed: true } : null);
       toast.success("Dispute resolved and funds released.");
+      window.dispatchEvent(new CustomEvent('open-feedback-modal', { detail: { action: 'resolve_dispute' } }));
     } catch { /* toast already shown by hook */ }
     finally {
       setIsResolvingDispute(false);
@@ -192,6 +195,7 @@ export default function ContractDetailPage() {
       }
       setContract(prev => prev ? { ...prev, isAccepted: true } : null);
       toast.success("Contract terms accepted.");
+      window.dispatchEvent(new CustomEvent('open-feedback-modal', { detail: { action: 'accept_contract' } }));
     } catch {
       toast.error("Failed to accept contract.");
     } finally {

@@ -106,6 +106,7 @@ function NewContractForm() {
         await updateApplicationStatus(formData.applicationId, "accepted");
       }
 
+      window.dispatchEvent(new CustomEvent('open-feedback-modal', { detail: { action: 'create_contract' } }));
       router.push("/dashboard/contracts");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create contract";
