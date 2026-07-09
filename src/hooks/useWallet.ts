@@ -304,6 +304,23 @@ export function useWallet() {
         walletNetwork: wNetwork,
       });
       setModalOpen(false);
+      
+      try {
+        if (typeof window !== 'undefined') {
+          import("@/hooks/useAnalytics").then(({ useAnalytics }) => {
+            // Cannot use hook directly inside callback, but we can import and call it
+            // Actually, we can just call the posthog instance directly to avoid hook rules
+            const ph = (window as any).posthog;
+            if (ph) {
+              ph.capture('wallet_connected', { wallet: address });
+              ph.identify(address);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("Analytics error", e);
+      }
+
       return true;
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Failed to connect wallet";

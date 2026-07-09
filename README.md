@@ -79,6 +79,28 @@ During the initial testing phase, we collected feedback from early users testing
 - **Wallet Integration:** The seamless integration with Freighter was highlighted as a smooth experience, though some users requested support for additional wallets in the future.
 - **Mobile Experience:** The responsive design was well-received, allowing users to check their payment statuses easily on their phones.
 
+## Analytics & Traction Proof
+
+FreelancePay implements a robust growth infrastructure to capture user intent, track conversion funnels, and prove product-market fit:
+- **PostHog Integration:** Complete event tracking across the user journey (e.g., `wallet_connected`, `contract_create_started`, `escrow_funded`, `milestone_submitted`).
+- **Activity Feeds:** Real-time visibility into contract status changes, backed by on-chain proofs linking directly to Stellar Expert.
+- **Conversion Tracking:** Funnels are monitored to identify drop-offs during the contract creation and invite acceptance phases.
+
+## User Feedback & Iteration
+
+We prioritize rapid iteration based on real user feedback. The platform features an **In-App Feedback Modal** allowing users to rate their experience and provide comments instantly after completing core actions (e.g., funding an escrow or releasing a payout).
+
+### Iteration Summary (Level 5 Upgrade)
+Based on early user testing and growth analysis, we implemented the following "Level 5" features:
+1. **Guided Onboarding & Invites:** Seamless `?invite=` links allow freelancers and clients to instantly join a specific contract context.
+2. **Contract Activity Feeds:** A clear, chronological history of all contract events.
+3. **Frictionless Feedback:** Integrated in-app feedback collection synced directly to Firestore.
+
+### Improvement Roadmap
+- **Social Proof:** Implementing public profiles and successful contract histories.
+- **Multi-chain / Multi-asset:** Expanding beyond USDC on Stellar to support additional assets.
+- **Dispute Resolution DAOs:** Decentralizing the arbitration process for disputed contracts.
+
 ## Tech Stack
 - **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Blockchain:** Stellar Soroban (Rust smart contracts)

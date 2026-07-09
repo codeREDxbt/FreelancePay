@@ -4,21 +4,25 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 import { useEscrow } from "@/hooks/useEscrow";
-import { getContract, updateMilestoneStatus, flagDispute } from "@/lib/firebase/contracts";
+import { getContract, updateMilestoneStatus, flagDispute, updateContract } from "@/lib/firebase/contracts";
 import { ErrorBoundary } from "@/components/providers/error-boundary";
 import type { Contract, MilestoneStatus } from "@/types";
 import Link from "next/link";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { logTransactionEvent } from "@/lib/firebase/growth";
 
 import { ArrowLeft, Loader2, AlertCircle, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
 import { ChatWidget } from "@/components/dashboard/ChatWidget";
 import { ContractReviewWidget } from "@/components/dashboard/ContractReviewWidget";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 
 export default function ContractDetailPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { isConnected, publicKey } = useWallet();
+  const { trackMilestoneSubmitted, trackMilestoneApproved, trackInviteSent } = useAnalytics();
   const contractAuto = useEscrow(id);
   const {
     approveMilestone,
@@ -39,6 +43,7 @@ export default function ContractDetailPage() {
   const [isResolvingDispute, setIsResolvingDispute] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [resolveForm, setResolveForm] = useState({ releaseTo: "", amount: "" });
 
   const contractIsAccepted = contract?.isAccepted !== false;
@@ -78,34 +83,42 @@ export default function ContractDetailPage() {
 
     setIsSubmittingWork(true);
     try {
-      // On-chain submission: may succeed, return null (demo mode), or throw
-      // If it throws, the useEscrow hook already shows a toast.error
       await onChainSubmitMilestone(activeMilestoneIndex);
 
-      // On-chain succeeded (or demo mode) — update Firestore to "submitted"
-      // so the client sees the work and can approve it
+      if (publicKey) {
+        await logTransactionEvent({
+          contractId: contract.id,
+          type: "milestone_submitted",
+          walletAddress: publicKey,
+        });
+      }
+
       await updateMilestoneStatus(contract.id, activeMilestoneIndex, "submitted", deliverableUrl);
       setContract(prev => prev ? {
         ...prev,
         milestones: prev.milestones.map((m, i) => i === activeMilestoneIndex ? { ...m, status: "submitted" as const, deliverableUrl } : m)
       } : null);
+      if (publicKey) trackMilestoneSubmitted(publicKey, contract.id, activeMilestoneIndex);
       toast.success("Work submitted for review!");
     } catch {
-      // The useEscrow hook already showed a toast for on-chain errors.
-      // Only show our own error if Firestore update failed (on-chain succeeded
-      // but Firestore didn't). We can't easily distinguish here, but the
-      // on-chain hook re-throws non-demo errors, so reaching here means
-      // either a real on-chain failure (toast already shown) or Firestore failure.
       toast.error("Failed to submit work. Please try again.");
     } finally {
       setIsSubmittingWork(false);
     }
   };
 
-  const handleApprove = async () => {
+  const handleApproveMilestone = async () => {
     if (!contract || activeMilestoneIndex === -1) return;
     try {
       await approveMilestone(activeMilestoneIndex);
+      if (publicKey) {
+        await logTransactionEvent({
+          contractId: contract.id,
+          type: "milestone_approved",
+          walletAddress: publicKey,
+        });
+        trackMilestoneApproved(publicKey, contract.id, activeMilestoneIndex);
+      }
       toast.success("Funds released successfully!");
       setContract(prev => {
         if (!prev) return null;
@@ -169,10 +182,16 @@ export default function ContractDetailPage() {
     if (!contract) return;
     setIsAccepting(true);
     try {
-      const { acceptContract } = await import("@/lib/firebase/contracts");
-      await acceptContract(contract.id);
+      await updateContract(contract.id, { isAccepted: true });
+      if (publicKey) {
+        await logTransactionEvent({
+          contractId: contract.id,
+          type: "contract_accepted",
+          walletAddress: publicKey,
+        });
+      }
       setContract(prev => prev ? { ...prev, isAccepted: true } : null);
-      toast.success("Contract accepted!");
+      toast.success("Contract terms accepted.");
     } catch {
       toast.error("Failed to accept contract.");
     } finally {
@@ -199,6 +218,16 @@ export default function ContractDetailPage() {
       toast.error("Failed to cancel contract.", { id: "cancel" });
       setIsCancelling(false);
     }
+  };
+
+  const handleShareInvite = () => {
+    if (!contract || typeof window === 'undefined') return;
+    const inviteLink = `${window.location.origin}/?invite=${contract.id}`;
+    navigator.clipboard.writeText(inviteLink);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+    if (publicKey) trackInviteSent(publicKey, contract.id);
+    toast.success("Invite link copied to clipboard");
   };
 
   if (isFetching) {
@@ -235,9 +264,19 @@ export default function ContractDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Contracts
         </Link>
 
-        <div className="mb-12">
-          <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">{contract.title}</h1>
-          <p className="text-ink-secondary font-ui-label text-lg max-w-3xl">{contract.description}</p>
+        <div className="mb-8 md:mb-12 flex flex-col md:flex-row md:items-start justify-between gap-6">
+          <div>
+            <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">{contract.title}</h1>
+            <p className="text-ink-secondary font-ui-label text-lg max-w-3xl">{contract.description}</p>
+          </div>
+          {(isClient || isFreelancer) && (
+            <button
+              onClick={handleShareInvite}
+              className="shrink-0 py-3 px-6 bg-bg-base border-2 border-accent text-accent hover:bg-accent/10 font-ui-label font-bold uppercase tracking-widest text-sm transition-colors"
+            >
+              {isCopied ? "Copied!" : "Share Invite Link"}
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-12">
@@ -428,7 +467,7 @@ export default function ContractDetailPage() {
                       </div>
                       
                       <button type="button"
-                        onClick={handleApprove}
+                        onClick={handleApproveMilestone}
                         disabled={isEscrowLoading}
                         className="neopop-button-teal w-full py-5 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                       >
@@ -520,6 +559,11 @@ export default function ContractDetailPage() {
               ) : (
                 <p className="font-ui-label text-sm text-ink-secondary">Guest View (No actions available)</p>
               )}
+            </div>
+
+            {/* Activity Feed */}
+            <div className="mt-8">
+              <ActivityFeed contractId={contract.id} />
             </div>
 
             {/* Chat Widget */}

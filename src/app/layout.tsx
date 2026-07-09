@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { MotionProvider } from "@/components/providers/motion-provider";
 import { FeedbackWidget } from "@/components/ui/FeedbackWidget";
+import { InviteReceiver } from "@/components/InviteReceiver";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default function RootLayout({
             <Toaster richColors position="top-right" />
             {children}
             <FeedbackWidget />
+            <InviteReceiver />
             <Analytics />
             <SpeedInsights />
           </MotionProvider>
