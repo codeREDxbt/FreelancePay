@@ -307,11 +307,8 @@ export function useWallet() {
       
       try {
         if (typeof window !== 'undefined') {
-          import("@/hooks/useAnalytics").then(({ useAnalytics }) => {
-            // Cannot use hook directly inside callback, but we can import and call it
-            // Actually, we can just call the posthog instance directly to avoid hook rules
-            const ph = (window as any).posthog;
-            if (ph) {
+          import("posthog-js").then(({ default: ph }) => {
+            if (ph && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
               ph.capture('wallet_connected', { wallet: address });
               ph.identify(address);
             }
