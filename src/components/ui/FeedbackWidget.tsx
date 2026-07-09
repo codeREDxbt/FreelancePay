@@ -21,8 +21,9 @@ export function FeedbackWidget() {
     const handleOpenModal = (event: CustomEvent<{ action?: string }>) => {
       setIsOpen(true);
       setCompletedAction(event.detail?.action || null);
-      if (publicKey) {
-        trackFeedbackShown(publicKey);
+      const currentPublicKey = publicKey || (typeof window !== "undefined" ? localStorage.getItem("fp_wallet_address") : null);
+      if (currentPublicKey) {
+        trackFeedbackShown(currentPublicKey);
       }
     };
 
@@ -34,7 +35,8 @@ export function FeedbackWidget() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!publicKey) {
+    const currentPublicKey = publicKey || (typeof window !== "undefined" ? localStorage.getItem("fp_wallet_address") : null);
+    if (!currentPublicKey) {
       alert("Please connect your wallet first");
       return;
     }
@@ -42,13 +44,13 @@ export function FeedbackWidget() {
     setIsSubmitting(true);
     try {
       await submitFeedback({
-        walletAddress: publicKey,
+        walletAddress: currentPublicKey,
         rating,
         confusionPoint: comment, // using comment as confusionPoint/free-text
         completedAction: completedAction ? [completedAction] : [],
       });
       
-      trackFeedbackSubmitted(publicKey, rating);
+      trackFeedbackSubmitted(currentPublicKey, rating);
       
       setSubmitted(true);
       setTimeout(() => {
@@ -69,8 +71,9 @@ export function FeedbackWidget() {
   const handleToggle = () => {
     const newState = !isOpen;
     setIsOpen(newState);
-    if (newState && publicKey) {
-      trackFeedbackShown(publicKey);
+    const currentPublicKey = publicKey || (typeof window !== "undefined" ? localStorage.getItem("fp_wallet_address") : null);
+    if (newState && currentPublicKey) {
+      trackFeedbackShown(currentPublicKey);
     }
   };
 
