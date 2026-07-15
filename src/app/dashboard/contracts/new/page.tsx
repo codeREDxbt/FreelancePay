@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowRight, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Plus, Trash2, Info, Sparkles } from "lucide-react";
 import { createContract } from "@/lib/firebase/contracts";
 import { updateJobStatus, updateApplicationStatus } from "@/lib/firebase/jobs";
 import { useWallet } from "@/hooks/useWallet";
@@ -42,6 +42,21 @@ function NewContractForm() {
       ? "Invalid freelancer address in URL parameters."
       : null;
   });
+
+  const loadSampleContract = () => {
+    setFormData({
+      title: "Q4 Website Development",
+      description: "Frontend development for the new landing page, including responsive design and analytics integration.",
+      freelancerAddress: "GBV4ZLI7Y3W76XYNY7XG3EJJY677D2T2W6I22Z22Y5Q2Q4U7H7X3XY5Y",
+      jobId: "",
+      applicationId: "",
+      milestones: [
+        { description: "Design Mockups & Figma Handoff", amount: "500", deliverableUrl: "" },
+        { description: "Frontend Implementation & Testing", amount: "1500", deliverableUrl: "" },
+      ]
+    });
+    setError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,7 +168,16 @@ function NewContractForm() {
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
         
-        <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">Create Contract</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight">Create Contract</h1>
+          <button
+            onClick={loadSampleContract}
+            type="button"
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-accent bg-accent/10 px-4 py-2 hover:bg-accent/20 transition-colors w-fit"
+          >
+            <Sparkles className="w-4 h-4" /> Try Sample Contract
+          </button>
+        </div>
         <p className="text-ink-secondary mb-12 font-ui-label">Configure the parameters for your escrowed agreement.</p>
 
         <form onSubmit={handleSubmit} className="space-y-12">
@@ -289,6 +313,17 @@ function NewContractForm() {
               </m.div>
             )}
           </AnimatePresence>
+
+          {/* Pre-submit Review */}
+          <div className="bg-bg-void border-l-2 border-accent p-6 mt-8">
+            <h3 className="flex items-center gap-2 font-ui-label text-sm uppercase tracking-widest font-bold text-ink-primary mb-2">
+              <Info className="w-4 h-4 text-accent" /> Pre-submit Review
+            </h3>
+            <p className="text-sm text-ink-secondary">
+              You are about to lock <strong>{totalCalculated > 0 ? totalCalculated.toLocaleString() : "0"} USDC</strong> into a smart contract on the Stellar network. 
+              The funds will be held in escrow and can only be released when you approve the milestones.
+            </p>
+          </div>
 
           <div className="pt-8 flex items-center justify-end">
             <button
