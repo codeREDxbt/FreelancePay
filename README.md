@@ -7,9 +7,11 @@
 
 ## Live Demo & Links
 - **Live Demo:** [freelancepayxbt.vercel.app](https://freelancepayxbt.vercel.app)
-- **Demo Video:** [Watch on Google Drive](https://drive.google.com/file/d/1hqha3FRoAfrMUZ23pEreXLHKh4nNEfsM/view?usp=sharing)
+- **Demo Video Script:** [docs/demo-script.md](./docs/demo-script.md)
+- **Pitch Deck Outline:** [docs/pitch-outline.md](./docs/pitch-outline.md)
 - **Contract Address (Soroban Testnet):** `CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU`
 - **Proof of 10+ Wallet Interactions:** [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU)
+- **Level 5 Plan:** [docs/level-5-plan.md](./docs/level-5-plan.md)
 
 ## About the Project
 
@@ -91,10 +93,13 @@ FreelancePay implements a robust growth infrastructure to capture user intent, t
 We prioritize rapid iteration based on real user feedback. The platform features an **In-App Feedback Modal** allowing users to rate their experience and provide comments instantly after completing core actions (e.g., funding an escrow or releasing a payout).
 
 ### Iteration Summary (Level 5 Upgrade)
-Based on early user testing and growth analysis, we implemented the following "Level 5" features:
-1. **Guided Onboarding & Invites:** Seamless `?invite=` links allow freelancers and clients to instantly join a specific contract context.
-2. **Contract Activity Feeds:** A clear, chronological history of all contract events.
-3. **Frictionless Feedback:** Integrated in-app feedback collection synced directly to Firestore.
+Based on early user testing and growth analysis, we implemented the following "Level 5" features to remove friction and accelerate the growth loop:
+1. **Frictionless Feedback Loop:** An integrated global `FeedbackModal` captures 1-5 star ratings and qualitative feedback directly after core user actions (accepting contracts, funding, releasing milestones). Data is synced directly to Firestore.
+2. **Guided Onboarding & Viral Invites:** A seamless "Invite Counterparty" UI on the contract dashboard allows users to easily copy `?invite=` links, enabling freelancers and clients to instantly join a specific contract context.
+3. **Contract Action Clarity:** A refined contract dashboard featuring clear "Next Action" callouts and explicit role-based tags (`Freelancer Action Required`, `Client Action Required`) on milestones to prevent stalled contracts.
+4. **Error Recovery & Network State:** Granular loading states (`Awaiting Wallet Signature...` and `Submitting to Stellar Network...`) for all on-chain actions to build trust, plus a Testnet troubleshooting block linked directly to the Stellar faucet.
+
+*Note: For a detailed breakdown of the Level 5 iterations, see [docs/iteration-summary.md](./docs/iteration-summary.md).*
 
 ### Improvement Roadmap
 - **Social Proof:** Implementing public profiles and successful contract histories.
