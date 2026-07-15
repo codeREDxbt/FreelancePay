@@ -7,12 +7,14 @@ import { m } from 'framer-motion';
 import { Plus, HelpCircle, UserCog, AlertTriangle } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import { Logo } from "@/components/ui/Logo";
+import { RampExplanationModal } from "@/components/dashboard/RampExplanationModal";
 
 import { navItems } from "./navItems";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [isRampModalOpen, setRampModalOpen] = useState(false);
   const { isConnected, walletNetwork } = useWallet();
   const siteNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK || "TESTNET";
   const resolvedWalletNet = walletNetwork ? walletNetwork.toUpperCase() : siteNetwork === "PUBLIC" ? "MAINNET" : "TESTNET";
@@ -34,8 +36,8 @@ export function DashboardSidebar() {
           <Logo iconSize={28} textSize="text-xl" subTextSize="text-[9px]" />
         </div>
         
-        {/* Network Badges */}
-        <div className="flex flex-col gap-1.5 px-1 bg-bg-void p-2 rounded-lg border border-edge-neutral">
+        {/* Network Badges & Troubleshooting */}
+        <div className="flex flex-col gap-2 px-1 bg-bg-void p-3 rounded-lg border border-edge-neutral shadow-neopop-sm">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider text-ink-tertiary font-ui-label">Site Network</span>
             <span className={`text-[9px] font-mono-data font-bold px-1.5 py-0.5 rounded ${sNetNorm === "MAINNET" ? "bg-accent-glow text-accent" : "bg-bg-interactive text-ink-secondary"}`}>
@@ -43,7 +45,7 @@ export function DashboardSidebar() {
             </span>
           </div>
           {mounted && isConnected && (
-            <div className="flex items-center justify-between border-t border-edge-neutral pt-1.5 mt-0.5">
+            <div className="flex items-center justify-between border-t border-edge-neutral pt-2 mt-0.5">
               <span className="text-[10px] uppercase tracking-wider text-ink-tertiary font-ui-label">Wallet Network</span>
               <span className={`text-[9px] font-mono-data font-bold px-1.5 py-0.5 rounded ${wNetNorm === "MAINNET" ? "bg-accent-glow text-accent" : "bg-bg-interactive text-ink-secondary"}`}>
                 {wNetNorm}
@@ -51,9 +53,24 @@ export function DashboardSidebar() {
             </div>
           )}
           {mismatch && (
-            <div className="flex items-start gap-1.5 mt-1.5 p-1.5 bg-status-disputed/10 border border-status-disputed/20 rounded text-status-disputed">
-              <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
-              <p className="text-[9px] font-ui-label leading-tight">Mismatch! Switch your wallet to {sNetNorm}.</p>
+            <div className="flex flex-col gap-2 mt-2 p-2 bg-status-disputed/10 border border-status-disputed/30 rounded text-status-disputed">
+              <div className="flex items-start gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <p className="text-[10px] font-ui-label font-bold uppercase tracking-wider leading-tight">Network Mismatch</p>
+              </div>
+              <p className="text-[9px] font-mono-data opacity-90">Switch your wallet network to <b>{sNetNorm}</b> in Freighter settings to continue.</p>
+            </div>
+          )}
+          {mounted && isConnected && sNetNorm === "TESTNET" && !mismatch && (
+            <div className="mt-2 pt-2 border-t border-edge-neutral">
+              <a 
+                href="https://laboratory.stellar.org/#account-creator?network=test" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 rounded font-ui-label text-[10px] font-bold uppercase tracking-widest transition-colors"
+              >
+                Get Testnet Funds
+              </a>
             </div>
           )}
         </div>
@@ -98,6 +115,13 @@ export function DashboardSidebar() {
           <Plus className="w-4 h-4" />
           New Contract
         </Link>
+        <button
+          onClick={() => setRampModalOpen(true)}
+          className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors duration-200 relative text-ink-secondary hover:bg-bg-interactive hover:text-ink-primary text-left"
+        >
+          <HelpCircle className="w-5 h-5 relative z-10" />
+          <span className="font-ui-label text-ui-label relative z-10">How Fiat Works</span>
+        </button>
         <Link
           href="/help"
           className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors duration-200 relative ${
@@ -135,6 +159,11 @@ export function DashboardSidebar() {
           <span className="font-ui-label text-ui-label relative z-10">Account</span>
         </Link>
       </div>
+
+      <RampExplanationModal 
+        isOpen={isRampModalOpen} 
+        onClose={() => setRampModalOpen(false)} 
+      />
     </aside>
   );
 }

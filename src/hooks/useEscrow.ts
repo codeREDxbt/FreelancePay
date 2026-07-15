@@ -20,6 +20,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
   const { isConnected, publicKey, sign } = useWallet();
   const [state, setState] = useState<EscrowState | null>(null);
   const [isFetching, setIsFetching] = useState(false);
+  const [isAwaitingSignature, setIsAwaitingSignature] = useState(false);
+  const [isSubmittingToNetwork, setIsSubmittingToNetwork] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const resolvedContractId = contractId || STELLAR_CONFIG.contractId;
@@ -74,6 +76,7 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw new Error("Wallet not connected");
     }
     setIsFetching(true);
+    setIsAwaitingSignature(true);
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     
@@ -83,6 +86,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
 
       const unsigned = prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign((await unsigned).toString());
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(true);
       toast.loading("Submitting transaction to Soroban...", { id: toastId });
 
       const result = await submitSignedTransaction(signedXdr);
@@ -103,6 +108,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw err;
     } finally {
       setIsFetching(false);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(false);
     }
   }, [isConnected, client, sign, fetchState]);
 
@@ -117,6 +124,7 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw new Error("Wallet not connected");
     }
     setIsFetching(true);
+    setIsAwaitingSignature(true);
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     
@@ -134,6 +142,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
 
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(true);
       toast.loading("Submitting funding transaction to Soroban...", { id: toastId });
       
       const result = await submitSignedTransaction(signedXdr);
@@ -163,6 +173,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw err;
     } finally {
       setIsFetching(false);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(false);
     }
   }, [isConnected, client, publicKey, sign, fetchState]);
 
@@ -172,6 +184,7 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw new Error("Wallet not connected");
     }
     setIsFetching(true);
+    setIsAwaitingSignature(true);
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
 
@@ -201,6 +214,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
 
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(true);
       toast.loading("Submitting deliverable to Soroban...", { id: toastId });
 
       const result = await submitSignedTransaction(signedXdr);
@@ -222,6 +237,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw err;
     } finally {
       setIsFetching(false);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(false);
     }
   }, [isConnected, client, state, sign, fetchState]);
 
@@ -231,6 +248,7 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw new Error("Wallet not connected");
     }
     setIsFetching(true);
+    setIsAwaitingSignature(true);
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     try {
@@ -238,6 +256,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       const tx = await client.flag_dispute({ project_id: projectId, caller: publicKey });
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(true);
       toast.loading("Submitting dispute to Soroban...", { id: toastId });
       const result = await submitSignedTransaction(signedXdr);
       toast.success("Dispute flagged successfully!", { 
@@ -256,6 +276,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw err;
     } finally {
       setIsFetching(false);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(false);
     }
   }, [isConnected, client, publicKey, sign, fetchState]);
 
@@ -274,6 +296,7 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw new Error("Wallet not connected");
     }
     setIsFetching(true);
+    setIsAwaitingSignature(true);
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     try {
@@ -287,6 +310,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       });
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(true);
       toast.loading("Submitting resolution to Soroban...", { id: toastId });
       const result = await submitSignedTransaction(signedXdr);
       toast.success("Dispute resolved successfully!", { 
@@ -305,6 +330,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw err;
     } finally {
       setIsFetching(false);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(false);
     }
   }, [isConnected, client, sign, fetchState]);
 
@@ -314,6 +341,7 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw new Error("Wallet not connected");
     }
     setIsFetching(true);
+    setIsAwaitingSignature(true);
     setError(null);
     const toastId = toast.loading("Waiting for wallet signature...");
     try {
@@ -321,6 +349,8 @@ export function useEscrow(projectId?: string, contractId?: string) {
       const tx = await client.cancel_contract({ project_id: projectId });
       const preparedXdr = await prepareSorobanTx(tx.built!.toXDR());
       const signedXdr = await sign(preparedXdr);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(true);
       toast.loading("Submitting cancellation to Soroban...", { id: toastId });
       const result = await submitSignedTransaction(signedXdr);
       toast.success("Contract cancelled successfully!", { 
@@ -339,12 +369,16 @@ export function useEscrow(projectId?: string, contractId?: string) {
       throw err;
     } finally {
       setIsFetching(false);
+      setIsAwaitingSignature(false);
+      setIsSubmittingToNetwork(false);
     }
   }, [isConnected, client, publicKey, sign, fetchState]);
 
   return {
     state,
     isLoading: isFetching,
+    isAwaitingSignature,
+    isSubmittingToNetwork,
     error,
     refresh:    fetchState,
     fundContract,

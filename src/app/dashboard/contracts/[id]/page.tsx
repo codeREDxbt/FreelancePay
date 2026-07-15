@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { logTransactionEvent } from "@/lib/firebase/growth";
 
-import { ArrowLeft, Loader2, AlertCircle, ShieldAlert, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, ShieldAlert, AlertTriangle, Link as LinkIcon, Copy, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
 import { ChatWidget } from "@/components/dashboard/ChatWidget";
@@ -28,6 +28,8 @@ export default function ContractDetailPage() {
     approveMilestone,
     submitMilestone: onChainSubmitMilestone,
     isLoading: isEscrowLoading,
+    isAwaitingSignature,
+    isSubmittingToNetwork,
     flagDispute: onChainFlagDispute,
     resolveDispute: onChainResolveDispute,
     cancelContract: onChainCancelContract,
@@ -102,7 +104,7 @@ export default function ContractDetailPage() {
       toast.success("Work submitted for review!");
       window.dispatchEvent(new CustomEvent('open-feedback-modal', { detail: { action: 'submit_milestone' } }));
     } catch {
-      toast.error("Failed to submit work. Please try again.");
+      // toast is already shown by useEscrow
     } finally {
       setIsSubmittingWork(false);
     }
@@ -273,15 +275,32 @@ export default function ContractDetailPage() {
             <h1 className="font-headline-lg text-4xl lg:text-5xl font-bold tracking-tight mb-4">{contract.title}</h1>
             <p className="text-ink-secondary font-ui-label text-lg max-w-3xl">{contract.description}</p>
           </div>
-          {(isClient || isFreelancer) && (
+        </div>
+
+        {/* Invite Card if counterparty is missing or for easy access */}
+        {(isClient || isFreelancer) && (
+          <div className="bg-bg-interactive border border-edge-neutral p-6 mb-12 shadow-neopop flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h3 className="font-ui-label font-bold text-ink-primary uppercase tracking-widest flex items-center gap-2 mb-2">
+                <LinkIcon className="w-5 h-5 text-accent" /> Invite Counterparty
+              </h3>
+              <p className="font-mono-data text-ink-secondary text-sm">
+                Share this contract link with your counterparty so they can connect their wallet and join.
+              </p>
+            </div>
             <button
               onClick={handleShareInvite}
-              className="shrink-0 py-3 px-6 bg-bg-base border-2 border-accent text-accent hover:bg-accent/10 font-ui-label font-bold uppercase tracking-widest text-sm transition-colors"
+              className={`shrink-0 py-3 px-6 border-2 font-ui-label font-bold uppercase tracking-widest text-sm transition-colors flex items-center gap-2 ${
+                isCopied 
+                  ? "bg-accent/10 border-accent text-accent" 
+                  : "bg-bg-base border-edge-strong text-ink-primary hover:border-accent hover:text-accent"
+              }`}
             >
-              {isCopied ? "Copied!" : "Share Invite Link"}
+              {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {isCopied ? "Link Copied!" : "Copy Invite Link"}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex flex-col lg:flex-row gap-12">
           
@@ -315,8 +334,18 @@ export default function ContractDetailPage() {
                     <div className="bg-bg-base border border-edge-neutral p-6 shadow-neopop group hover:border-accent/50 transition-colors">
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                         <div>
-                          <h3 className={`font-ui-label font-bold text-lg mb-1 uppercase tracking-widest ${isCompleted ? 'text-ink-secondary line-through' : 'text-ink-primary'}`}>
+                          <h3 className={`font-ui-label font-bold text-lg mb-1 uppercase tracking-widest ${isCompleted ? 'text-ink-secondary line-through' : 'text-ink-primary'} flex items-center gap-3`}>
                             {m.description}
+                            {isActive && m.status === "pending" && (
+                              <span className="bg-status-warning/10 text-status-warning border border-status-warning/30 px-2 py-0.5 text-[10px] rounded-full whitespace-nowrap">
+                                Freelancer Action Required
+                              </span>
+                            )}
+                            {isActive && m.status === "submitted" && (
+                              <span className="bg-status-info/10 text-status-info border border-status-info/30 px-2 py-0.5 text-[10px] rounded-full whitespace-nowrap">
+                                Client Action Required
+                              </span>
+                            )}
                           </h3>
                           <p className="font-mono-data text-ink-secondary text-sm uppercase tracking-wider flex items-center gap-2">
                             Status: <span className={isCompleted ? 'text-accent' : isActive ? 'text-ink-primary' : ''}>{m.status}</span>
@@ -461,15 +490,28 @@ export default function ContractDetailPage() {
               ) : isClient ? (
                 <div className="space-y-6">
                   {currentStatus === "pending" ? (
-                    <div className="text-center p-6 border border-dashed border-ink-tertiary">
-                      <p className="font-ui-label text-sm text-ink-secondary uppercase tracking-widest">Awaiting Submission</p>
+                    <div className="p-4 bg-status-warning/10 border border-status-warning/30 mb-6">
+                      <p className="font-ui-label text-sm text-status-warning font-bold uppercase tracking-widest mb-1">Freelancer is working</p>
+                      <p className="font-mono-data text-xs text-ink-secondary">You have no actions to take until the freelancer submits their work.</p>
                     </div>
                   ) : currentStatus === "submitted" ? (
                     <>
-                      <div className="p-4 bg-accent/10 border border-accent/20 mb-6">
-                        <p className="font-ui-label text-sm text-accent font-bold uppercase tracking-widest">Work Submitted</p>
+                      <div className="p-4 bg-status-info/10 border border-status-info/30 mb-6">
+                        <p className="font-ui-label text-sm text-status-info font-bold uppercase tracking-widest mb-1">Your Action Required</p>
+                        <p className="font-mono-data text-xs text-ink-secondary">The freelancer has submitted work. Review it and approve to release funds.</p>
                       </div>
                       
+                      {isAwaitingSignature && (
+                        <div className="flex items-center gap-2 p-3 bg-accent/10 text-accent text-xs font-mono-data rounded border border-accent/20 mb-4">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Awaiting Wallet Signature...
+                        </div>
+                      )}
+                      {isSubmittingToNetwork && (
+                        <div className="flex items-center gap-2 p-3 bg-accent/10 text-accent text-xs font-mono-data rounded border border-accent/20 mb-4">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Submitting to Stellar Network...
+                        </div>
+                      )}
+
                       <button type="button"
                         onClick={handleApproveMilestone}
                         disabled={isEscrowLoading}
@@ -526,6 +568,10 @@ export default function ContractDetailPage() {
                 <div className="space-y-6">
                   {currentStatus === "pending" ? (
                     <form onSubmit={handleSubmitWork} className="space-y-6">
+                      <div className="p-4 bg-status-warning/10 border border-status-warning/30 mb-6">
+                        <p className="font-ui-label text-sm text-status-warning font-bold uppercase tracking-widest mb-1">Your Action Required</p>
+                        <p className="font-mono-data text-xs text-ink-secondary">Provide the URL to your completed deliverable to request payment release.</p>
+                      </div>
                       <input
                         type="url"
                         required
@@ -534,12 +580,22 @@ export default function ContractDetailPage() {
                         placeholder="Deliverable URL (https://...)"
                         className="w-full bg-transparent border-b-2 border-edge-neutral focus:border-accent outline-none py-3 font-mono-data text-sm transition-colors"
                       />
+                      {isAwaitingSignature && (
+                        <div className="flex items-center gap-2 p-3 bg-accent/10 text-accent text-xs font-mono-data rounded border border-accent/20 mt-4">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Awaiting Wallet Signature...
+                        </div>
+                      )}
+                      {isSubmittingToNetwork && (
+                        <div className="flex items-center gap-2 p-3 bg-accent/10 text-accent text-xs font-mono-data rounded border border-accent/20 mt-4">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Submitting to Stellar Network...
+                        </div>
+                      )}
                       <button
                         type="submit"
-                        disabled={isSubmittingWork || !deliverableUrl}
+                        disabled={isSubmittingWork || isEscrowLoading || !deliverableUrl}
                         className="neopop-button-teal w-full py-4 font-ui-label font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                       >
-                        {isSubmittingWork ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit Work"}
+                        {isSubmittingWork || isEscrowLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit Work"}
                       </button>
                     </form>
                   ) : currentStatus === "submitted" ? (
