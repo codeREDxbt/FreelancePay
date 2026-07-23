@@ -162,14 +162,34 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
     setStep("input");
   }, []);
 
+  const effectiveQuote = useMemo(() => {
+    if (!quote) return null;
+    if (quote.source === "reference_rate" && ammPool?.isInitialized) {
+      const amountIn = Number(quote.sourceAmount);
+      const reserveIn = direction === "buy_usdc" ? ammPool.reserveA : ammPool.reserveB;
+      const reserveOut = direction === "buy_usdc" ? ammPool.reserveB : ammPool.reserveA;
+      
+      if (reserveIn > 0 && reserveOut > 0) {
+        const amountInWithFee = amountIn * 0.997;
+        const ammOutput = (reserveOut * amountInWithFee) / (reserveIn + amountInWithFee);
+        
+        return {
+          ...quote,
+          destinationAmount: ammOutput.toFixed(7)
+        };
+      }
+    }
+    return quote;
+  }, [quote, ammPool, direction]);
+
   const destMin = useMemo(() => {
-    if (!quote) return "0";
-    const dest = Number(quote.destinationAmount);
+    if (!effectiveQuote) return "0";
+    const dest = Number(effectiveQuote.destinationAmount);
     return (dest * (1 - slippage)).toFixed(7);
-  }, [quote, slippage]);
+  }, [effectiveQuote, slippage]);
 
   const ammInsufficientLiquidity = useMemo(() => {
-    if (quote?.source !== "reference_rate" || !ammPool?.isInitialized) return false;
+    if (effectiveQuote?.source !== "reference_rate" || !ammPool?.isInitialized) return false;
     const amountIn = Number(amount);
     if (!amountIn || amountIn <= 0) return false;
 
@@ -184,32 +204,32 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
     const amountInWithFee = amountIn * 0.997;
     const ammOutput = (reserveOut * amountInWithFee) / (reserveIn + amountInWithFee);
 
-    return ammOutput < Number(destMin);
-  }, [quote, ammPool, amount, direction, destMin]);
+    return ammOutput === 0;
+  }, [effectiveQuote, ammPool, amount, direction]);
 
   const priceDisplay = useMemo(() => {
-    if (!quote) return null;
-    const src = Number(quote.sourceAmount);
-    const dst = Number(quote.destinationAmount);
+    if (!effectiveQuote) return null;
+    const src = Number(effectiveQuote.sourceAmount);
+    const dst = Number(effectiveQuote.destinationAmount);
     if (dst === 0) return null;
     const rate = src / dst;
     return `1 ${toLabel} \u2248 ${rate.toFixed(4)} ${fromLabel}`;
-  }, [quote, fromLabel, toLabel]);
+  }, [effectiveQuote, fromLabel, toLabel]);
 
   const referenceRateDisplay = useMemo(() => {
-    if (!quote || quote.source !== "reference_rate") return null;
-    const rate = quote.xlmUsdRate ?? 0;
+    if (!effectiveQuote || effectiveQuote.source !== "reference_rate") return null;
+    const rate = effectiveQuote.xlmUsdRate ?? 0;
     if (rate <= 0) return null;
     if (direction === "buy_usdc") {
       return `1 XLM ≈ $${rate.toFixed(4)} · 1 USDC ≈ $1.00`;
     }
     return `1 XLM ≈ $${rate.toFixed(4)} · 1 USDC ≈ $1.00`;
-  }, [quote, direction]);
+  }, [effectiveQuote, direction]);
 
   const handleReview = useCallback(() => {
-    if (!quote || !amount) return;
+    if (!effectiveQuote || !amount) return;
     setStep("review");
-  }, [quote, amount]);
+  }, [effectiveQuote, amount]);
 
   const onSwapCompleteRef = useRef<SwapModalProps["onSwapComplete"]>(onSwapComplete);
   useEffect(() => {
@@ -217,7 +237,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
   }, [onSwapComplete]);
 
   const handleSignAndSwap = useCallback(async () => {
-    if (!isConnected || !publicKey || !quote) return;
+    if (!isConnected || !publicKey || !effectiveQuote) return;
     setIsSigning(true);
     setStep("signing");
     const toastId = toast.loading("Building swap transaction...");
@@ -229,27 +249,27 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
     try {
       let xdr: string;
       const useSorobanAmm =
-        quote.source === "reference_rate" && STELLAR_CONFIG.ammContractId;
+        effectiveQuote.source === "reference_rate" && STELLAR_CONFIG.ammContractId;
 
       if (useSorobanAmm) {
         toast.loading("Building Soroban AMM swap...", { id: toastId });
         xdr = await buildSorobanSwapTx({
           publicKey,
           sendAsset: fromAsset,
-          sendAmount: quote.sourceAmount,
+          sendAmount: effectiveQuote.sourceAmount,
           minDestAmount: destMin,
         });
       } else {
         toast.loading("Building swap transaction...", { id: toastId });
         xdr = await buildSwapTransaction({
-          kind: quote.kind,
+          kind: effectiveQuote.kind,
           sourceAsset: fromAsset,
-          sourceAmount: quote.sourceAmount,
+          sourceAmount: effectiveQuote.sourceAmount,
           destAsset: toAsset,
-          destAmount: quote.destinationAmount,
+          destAmount: effectiveQuote.destinationAmount,
           destMin,
           publicKey,
-          path: quote.path,
+          path: effectiveQuote.path,
         });
       }
       toast.loading("Waiting for wallet signature...", { id: toastId });
@@ -298,8 +318,8 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
         direction: eventDirection,
         sourceAsset: sourceAssetLabel,
         destAsset: destAssetLabel,
-        sourceAmount: quote.sourceAmount,
-        destinationAmount: quote.destinationAmount,
+        sourceAmount: effectiveQuote.sourceAmount,
+        destinationAmount: effectiveQuote.destinationAmount,
         txHash,
         status: "completed",
       }).catch((e) => console.warn("Failed to record swap event:", e));
@@ -307,8 +327,8 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
         direction: eventDirection,
         sourceAsset: sourceAssetLabel,
         destAsset: destAssetLabel,
-        sourceAmount: quote.sourceAmount,
-        destinationAmount: quote.destinationAmount,
+        sourceAmount: effectiveQuote.sourceAmount,
+        destinationAmount: effectiveQuote.destinationAmount,
         txHash,
       });
     } catch (err: unknown) {
@@ -332,14 +352,14 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
         ) : undefined,
       });
       setStep("input");
-      if (publicKey && quote) {
+      if (publicKey && effectiveQuote) {
         recordSwapEvent({
           walletAddress: publicKey,
           direction: eventDirection,
           sourceAsset: sourceAssetLabel,
           destAsset: destAssetLabel,
-          sourceAmount: quote.sourceAmount,
-          destinationAmount: quote.destinationAmount,
+          sourceAmount: effectiveQuote.sourceAmount,
+          destinationAmount: effectiveQuote.destinationAmount,
           status: "failed",
           errorMessage: msg,
         }).catch(() => {});
@@ -347,7 +367,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
     } finally {
       setIsSigning(false);
     }
-  }, [isConnected, publicKey, quote, fromAsset, toAsset, destMin, sign, direction]);
+  }, [isConnected, publicKey, effectiveQuote, fromAsset, toAsset, destMin, sign, direction]);
 
   const handleCopy = useCallback(async (value: string) => {
     try {
@@ -515,8 +535,8 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                       <span className="flex-1 min-w-0 text-2xl font-headline-lg font-bold text-ink-primary truncate">
                         {isQuoteLoading ? (
                           <Loader2 className="w-6 h-6 animate-spin text-ink-secondary" />
-                        ) : quote ? (
-                          Number(quote.destinationAmount).toFixed(4)
+                        ) : effectiveQuote ? (
+                          Number(effectiveQuote.destinationAmount).toFixed(4)
                         ) : (
                           <span className="text-ink-tertiary">0.00</span>
                         )}
@@ -531,19 +551,19 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                     <p className="text-xs text-ink-secondary font-mono-data text-center">{priceDisplay}</p>
                   )}
 
-                  {quote?.source === "reference_rate" && referenceRateDisplay && (
+                  {effectiveQuote?.source === "reference_rate" && referenceRateDisplay && (
                     <div className="flex items-start gap-2 px-3 py-2 bg-tertiary/10 border border-tertiary/30 rounded-lg text-xs text-on-surface">
                       <span className="font-ui-label font-semibold text-tertiary shrink-0">Reference rate:</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-mono-data">{referenceRateDisplay}</p>
-                        {quote.warning && (
-                          <p className="text-on-surface-variant mt-1 leading-snug">{quote.warning}</p>
+                        {effectiveQuote.warning && (
+                          <p className="text-on-surface-variant mt-1 leading-snug">{effectiveQuote.warning}</p>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {quote?.source === "reference_rate" && ammPool && (
+                  {effectiveQuote?.source === "reference_rate" && ammPool && (
                     <div className="flex items-start gap-2 px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs text-on-surface">
                       <span className="font-ui-label font-semibold text-on-surface-variant shrink-0">AMM Pool:</span>
                       <div className="flex-1 min-w-0 font-mono-data">
@@ -612,7 +632,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                     whileTap={{ scale: 0.97 }}
                     onClick={handleReview}
                     disabled={
-                      !quote || 
+                      !effectiveQuote || 
                       !amount || 
                       Number(amount) <= 0 || 
                       isQuoteLoading || 
@@ -626,13 +646,13 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
                 </>
               )}
 
-              {step === "review" && quote && (
+              {step === "review" && effectiveQuote && (
                 <>
                   <div className="space-y-3 p-4 bg-bg-void border-2 border-edge-neutral">
                     <div className="flex justify-between">
                       <span className="font-ui-label text-xs uppercase tracking-widest font-bold text-ink-secondary">You send</span>
                       <span className="font-mono-data text-sm text-ink-primary font-bold">
-                        {quote.sourceAmount} {fromLabel}
+                        {effectiveQuote.sourceAmount} {fromLabel}
                       </span>
                     </div>
                     <div className="flex justify-between">
