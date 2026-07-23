@@ -44,7 +44,7 @@ type SwapStep = "input" | "review" | "signing" | "done";
 export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSwapComplete }: SwapModalProps) {
   const shouldReduceMotion = useReducedMotion();
   const { isConnected, publicKey, sign } = useWallet();
-  const { pool: ammPool } = useLiquidityPoolInfo();
+  const { pool: ammPool, refresh: refreshAmmPool } = useLiquidityPoolInfo();
   const [direction, setDirection] = useState<SwapDirection>(defaultDirection);
   const [prevDefaultDirection, setPrevDefaultDirection] = useState(defaultDirection);
   if (prevDefaultDirection !== defaultDirection) {
@@ -313,6 +313,7 @@ export function SwapModal({ isOpen, onClose, defaultDirection = "buy_usdc", onSw
         getAccountBalance(publicKey, "XLM").then((r) => setXlmBalance(r.balance));
         getAccountBalance(publicKey, "USDC").then((r) => setUsdcBalance(r.balance));
       }
+      setTimeout(() => refreshAmmPool(), 1500);
       await recordSwapEvent({
         walletAddress: publicKey,
         direction: eventDirection,
