@@ -47,7 +47,7 @@ export function RampExplanationModal({ isOpen, onClose }: RampExplanationModalPr
                 <div>
                   <h3 className="font-ui-label font-bold uppercase tracking-widest text-sm mb-1">Stellar Anchors</h3>
                   <p className="font-mono-data text-xs text-ink-secondary leading-relaxed">
-                    FreelancePay is built on the Stellar network. Stellar uses regulated financial entities called "Anchors" to bridge traditional banking with the blockchain.
+                    FreelancePay is built on the Stellar network. Stellar uses regulated financial entities called &quot;Anchors&quot; to bridge traditional banking with the blockchain.
                   </p>
                 </div>
               </div>

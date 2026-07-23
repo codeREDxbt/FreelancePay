@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, ShieldCheck, ArrowRight, X } from 'lucide-react'
-import Link from 'next/link'
 import { useWallet } from '@/hooks/useWallet'
 
 function InviteReceiverContent() {
@@ -12,16 +11,11 @@ function InviteReceiverContent() {
   const router = useRouter()
   const inviteId = searchParams?.get('invite')
   const { isConnected } = useWallet()
-  const [isOpen, setIsOpen] = useState(false)
-
-  useEffect(() => {
-    if (inviteId) {
-      setIsOpen(true)
-    }
-  }, [inviteId])
+  const [closed, setClosed] = useState(false)
+  const isOpen = !!inviteId && !closed
 
   const handleClose = () => {
-    setIsOpen(false)
+    setClosed(true)
     // Remove query param without reloading
     const newUrl = window.location.pathname
     window.history.replaceState({}, '', newUrl)
@@ -60,7 +54,7 @@ function InviteReceiverContent() {
               
               <div>
                 <h2 className="font-headline-lg text-2xl font-bold uppercase tracking-widest text-ink-primary mb-2">
-                  You've been invited!
+                  You&apos;ve been invited!
                 </h2>
                 <p className="font-mono-data text-ink-secondary text-sm">
                   Someone invited you to collaborate on a smart contract via FreelancePay.
