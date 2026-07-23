@@ -66,9 +66,9 @@ export function useLiquidityPoolInfo() {
         const rb = findFieldInMap(retval, "reserve_b");
         const lp = findFieldInMap(retval, "total_lp_shares");
         setPool({
-          reserveA: ra ? i128ScValToNumber(ra) : 0,
-          reserveB: rb ? i128ScValToNumber(rb) : 0,
-          totalLpShares: lp ? i128ScValToNumber(lp) : 0,
+          reserveA: ra ? i128ScValToNumber(ra) / 1e7 : 0,
+          reserveB: rb ? i128ScValToNumber(rb) / 1e7 : 0,
+          totalLpShares: lp ? i128ScValToNumber(lp) / 1e7 : 0,
           isInitialized: true,
         });
       } else {
