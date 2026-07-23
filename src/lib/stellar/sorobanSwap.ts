@@ -39,11 +39,17 @@ export async function buildSorobanSwapTx(
     ? getNativeXlmSACAddress()
     : getUSDCSACAddress();
 
+  const toStroopsString = (val: string): string => {
+    const [intPart = "0", fracPart = ""] = val.split(".");
+    const padded = fracPart.padEnd(7, "0").slice(0, 7);
+    return intPart + padded;
+  };
+
   const args: xdr.ScVal[] = [
     addressToScVal(params.publicKey),
     addressToScVal(sendTokenAddress),
-    nativeToScVal(params.sendAmount, { type: "i128" }),
-    nativeToScVal(params.minDestAmount, { type: "i128" }),
+    nativeToScVal(toStroopsString(params.sendAmount), { type: "i128" }),
+    nativeToScVal(toStroopsString(params.minDestAmount), { type: "i128" }),
   ];
 
   const hostFunction = xdr.HostFunction.hostFunctionTypeInvokeContract(
