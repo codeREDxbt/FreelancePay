@@ -132,6 +132,8 @@ Below is a curated selection of feedback showcasing how we iterated based on rea
 
 ## 🛣️ Roadmap
 
+*Based directly on our 50+ testnet user feedback sessions, our primary focus for Level 6 and Level 7 will be initiating Mainnet deployment, integrating wider multi-wallet support (e.g., Albedo), and implementing a fiat on-ramp to drastically reduce friction for non-crypto-native clients.*
+
 | Level | Status |
 | :--- | :--- |
 | **Level 1** | ✅ Completed |
