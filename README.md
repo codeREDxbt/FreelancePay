@@ -48,8 +48,6 @@ This repository contains **over 15+ meaningful commits**, showcasing continuous 
 | 🔍 **Proof of 50+ Wallet Interactions** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU) |
 | 📈 **Pitch Deck (Presentation)** | [View on Google Drive](https://drive.google.com/file/d/1hqha3FRoAfrMUZ23pEreXLHKh4nNEfsM/view?usp=drive_link) |
 | 📊 **Pitch Deck Outline** | [docs/pitch-outline.md](./docs/pitch-outline.md) |
-| 📽️ **Demo Video Script** | [docs/demo-script.md](./docs/demo-script.md) |
-| 🏆 **Level 5 Execution Plan** | [docs/level-5-plan.md](./docs/level-5-plan.md) |
 
 ### ✨ Key Highlights
 
@@ -133,9 +131,16 @@ Below is a curated selection of feedback showcasing how we iterated based on rea
 ---
 
 ## 🛣️ Roadmap
-- [x] Initial release on Soroban Testnet
-- [x] Level 5 Features (Feedback loop, Viral Invites, Error Recovery)
-- [ ] Mainnet deployment and multi-wallet support
+
+| Level | Status |
+| :--- | :--- |
+| **Level 1** | ✅ Completed |
+| **Level 2** | ✅ Completed |
+| **Level 3** | ✅ Completed |
+| **Level 4** | ✅ Completed |
+| **Level 5** | ✅ Completed |
+| **Level 6** | ⏳ Not Yet |
+| **Level 7** | ⏳ Not Yet |
 
 ## 🤝 Contributing
 Contributions are what make the open-source community an amazing place. Any contributions you make are **greatly appreciated**. Please fork the repo, create a feature branch, and open a PR.
