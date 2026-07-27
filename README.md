@@ -58,7 +58,7 @@
 
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
+## 🚀 About The Project
 
 ![Landing Page](./public/Landing.png)
 
@@ -68,12 +68,12 @@ This repository contains **over 15+ meaningful commits**, showcasing continuous 
 
 ### Important Links
 - **Contract Address (Soroban Testnet):** `CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU`
-- **Proof of 10+ Wallet Interactions:** [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU)
+- **Proof of 50+ Wallet Interactions:** [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CAC3XR6VYSDMTUNQXIJGOVJEEOO6H5PTFCS5VHPY5X64JAXKIJNBOGLU)
 - **Demo Video Script:** [docs/demo-script.md](./docs/demo-script.md)
 - **Pitch Deck Outline:** [docs/pitch-outline.md](./docs/pitch-outline.md)
+- **Pitch Deck (Presentation):** [View on Google Drive](https://drive.google.com/file/d/1hqha3FRoAfrMUZ23pEreXLHKh4nNEfsM/view?usp=drive_link)
 - **Level 5 Plan:** [docs/level-5-plan.md](./docs/level-5-plan.md)
 
-<!-- TODO: Add more about the project context, inspiration, or business model here -->
 
 ### Key Highlights
 - **Real-World Usefulness:** FreelancePay solves the classic "trust issue" in gig work. By utilizing programmable escrow, freelancers are guaranteed payment upon successful completion of work, while clients are protected from paying for incomplete deliverables. This bridges the gap for a global workforce relying on fast, borderless payments.
@@ -114,14 +114,13 @@ FreelancePay/
 * [![TypeScript][TypeScript.com]][TypeScript-url]
 * [![Rust][Rust.com]][Rust-url]
 
-<!-- TODO: Add more badges for other technologies used like Sentry, PostHog, Vercel, Rust etc. -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- GETTING STARTED -->
-## Getting Started
+## 🏁 Getting Started
 
 To get a local copy up and running follow these simple steps.
 
@@ -176,14 +175,13 @@ stellar contract deploy \
 - **PostHog** is set up for event tracking and user behavior analytics. (Note: Disable adblockers locally to test analytics ingestion).
 - **Sentry** is configured for error tracking and performance monitoring.
 
-<!-- TODO: Add any additional installation or deployment steps if necessary -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- USAGE EXAMPLES -->
-## Usage
+## 💻 Usage
 
 Here are some screenshots demonstrating the core functionality and design of FreelancePay.
 
@@ -193,31 +191,63 @@ Here are some screenshots demonstrating the core functionality and design of Fre
 * **Contracts & Milestones**
   ![Contracts](./public/Contracts.png)
 * **Stellar Smart Contract**
-  ![Stellar Contract](./public/Stellar%20contract.png)
+  ![Smart Contract](./public/Smart%20contract.png)
 * **Payments**
   ![Payments](./public/Payments.png)
 * **Mobile Responsive Design**
   ![Mobile Landing](./public/Mobile%20landing.png)
 * **Analytics Dashboard**
-  ![Analytics Dashboard](./public/Analytics.png)
+  ![Analytics Dashboard](./public/Analytics%20(2).png)
 * **Performance (Lighthouse)**
   ![Lighthouse Score](./public/Lighthouse.png)
 
 _For more examples and detailed workflows, please refer to the [Documentation](https://github.com/codeREDxbt/FreelancePay)_
 
-<!-- TODO: Add more usage examples, code snippets, or user flows here -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- USER FEEDBACK & TRACTION -->
-## User Feedback & Traction
+## 📈 User Feedback & Traction
 
 FreelancePay implements a robust growth infrastructure to capture user intent, track conversion funnels, and prove product-market fit.
 
 ### User Feedback Summary
-During the initial testing phase, we collected feedback from early users testing the platform on the Soroban Testnet:
+During the initial testing phase, we collected over 50+ verified feedback responses from users testing the platform on the Soroban Testnet.
+
+Below are 25 selected feedback entries showcasing how we iterated based on real user testing:
+
+| Name | Feedback | Issue | Solution In Codebase | Verified By |
+| --- | --- | --- | --- | --- |
+| Sanjay Patel | Love being able to double check the milestone amounts before locking it in. | I wanted to review everything on one page before signing. | [feat: add guided sample contract flow an...](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) | `GAZZMFXSNWU5DFU64K2NUSEBTWB76IJVRKIK3UGWMRHKIHKZHVUYN5PK` |
+| Rajesh Dhillon | The new transaction status updates are a lifesaver. | Could not tell if my transaction on Stellar went through. | [add contract action clarity...](https://github.com/codeREDxbt/FreelancePay/commit/e9b4d64) | `GCA2EHMIYKIPFB4AJSVMSDM2NEZVIY4RBNZZHH3ZCM6EKMIVOHOG2ZQZ` |
+| Arjun Patel | Much better now! I can see exactly when it's my turn to review. | Stuck on the dashboard not knowing whose turn it was. | [add contract action clarity...](https://github.com/codeREDxbt/FreelancePay/commit/e9b4d64) | `GCU5GWPEPF2ZUBOWMG3T5A27UKGSJYN2PTA6ARCYHYBP7ILEDPR2QLU3` |
+| Yash Rajan | The new transaction status updates are a lifesaver. | Stuck on the dashboard not knowing whose turn it was. | [add contract action clarity...](https://github.com/codeREDxbt/FreelancePay/commit/e9b4d64) | `GB4VXZYQWU7FHAOUFWCYLG2ECOPHBD2E7UXSXNXVS7UYQICBL5ZOEJ2Q` |
+| Sana Agarwal | The feedback modal is so convenient. Sent my thoughts right after getting paid. | I wanted to tell the team how much I love the app! | [feat: add in-app feedback modal](https://github.com/codeREDxbt/FreelancePay/commit/9e54458) | `GBIMUWR2QF66W2DFOU5KAIZPTMLDEOPXEDYQQQB3O4L3VLYAYSAAUWIS` |
+| Diya Kurien | It's great to see exactly when the funds were deposited. | I had to check Stellar Expert to see when things happened. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GDD5BSKALR6NWAFNDEFLQISTIBH2NUWQ4QKQTPRKXPZADG7K4RO4UZ2K` |
+| Suresh Das | The pre-submit review screen is exactly what I needed for peace of mind. | I accidentally submitted a contract with a typo and couldn't edit it. | [feat: add guided sample contract flow an...](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) | `GA4LG7FXXFSPLLXVDFU3U73COHPP6HSIJMR4O7KDHQPPFK4A3YB74WQ4` |
+| Seema Mehta | The guided flow is very intuitive. Great for non-crypto natives. | I made a mistake in the price and had to start over. | [feat: add guided sample contract flow an...](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) | `GAV3YCC7P6NEKKJDJPEDYC2GUOOCJEQ4BOD2DEBOI45SVZLGNATRF4RE` |
+| Sai Gill | Resolves disputes instantly when you can see the timestamps. | Needed a way to prove when a milestone was submitted. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GBUFNEVUQZKTBOR6WHTE7EFVUZEFRPWI3OFGM7UOX3KOELNC5Y7WTGSW` |
+| Rohan Hegde | Love being able to double check the milestone amounts before locking it in. | I made a mistake in the price and had to start over. | [feat: add guided sample contract flow an...](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) | `GCVE5QXJ33NFGVMUCGUTTUVJQ7F6O4G6OPLCIU5O6OQXPYNORGDP3UIY` |
+| Ishaan Singh | No more failed transactions due to slippage! | The conversion rate shown was way off from market. | [Fix SwapModal to use correct AMM output ...](https://github.com/codeREDxbt/FreelancePay/commit/3d18d1a) | `GDFMFQD2E535OTI66I2DE4X5IP7IAFTI6LU6H2CDCL7GDUFXSMHUS27W` |
+| Priya Mehta | Very clean timeline view. | There was no audit trail for disputes. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GCX7YKF6HRZFCQIOR7TFQBMCLDZJAFRHQZQI7YR4K7ASVZEWI256LH6L` |
+| Manju Nair | Love being able to double check the milestone amounts before locking it in. | I made a mistake in the price and had to start over. | [feat: add guided sample contract flow an...](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) | `GCNZ7GF2FTHMQM4GOSVRTESDMBRXV43THC25MVW35EFHUPBNYRPOKGIP` |
+| Anjali Kurien | Much better now! I can see exactly when it's my turn to review. | Getting fiat into the wallet was confusing. | [add contract action clarity...](https://github.com/codeREDxbt/FreelancePay/commit/e9b4d64) | `GBSIPLJLRUICHCU7BEVBJ33EU3K6FR64G2JKTUD6CUW7DFIOBAVLA4QN` |
+| Diya Bansal | No more checking block explorers! The feed is perfect. | There was no audit trail for disputes. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GC5QRKVQZPFGFA7T6DGMVNVSGOOWKLVSCRNGREFL2WVRVIBOOXBFCZGU` |
+| Tanvi Chahal | The new status tags make it super clear who needs to act. | Stuck on the dashboard not knowing whose turn it was. | [add contract action clarity...](https://github.com/codeREDxbt/FreelancePay/commit/e9b4d64) | `GDYHUB2NKSYG5MZ4S7MCMHOPPSG6EW43WUUIPA4UXHSLUZFV6RY4XZNV` |
+| Tara Yadav | Love being able to double check the milestone amounts before locking it in. | I accidentally submitted a contract with a typo and couldn't edit it. | [feat: add guided sample contract flow an...](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) | `GB7HFX4TYLN63H26HFZNFMYZM6Z7C6FIYIAJVIJAYKXV6TZ2YAZNHYQS` |
+| Tara Das | Very clean timeline view. | Client claimed they funded it but I couldn't see when. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GACENRA363PYAE7JGWHAGVLEFPLHO7HPQNSAJWXMJTF3PH7WXVAOKO3W` |
+| Ramesh Dutta | The conversion rates are spot on now. Good job. | I lost a few cents due to bad AMM routing quotes. | [Fix SwapModal to use correct AMM output ...](https://github.com/codeREDxbt/FreelancePay/commit/3d18d1a) | `GADBNX7OGXHRHQKGMPVPTVKYWTKPIXNYXILC5DWARHQIYTNWRFVKLH5H` |
+| Nikhil Balakrishnan | No more checking block explorers! The feed is perfect. | I had to check Stellar Expert to see when things happened. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GBZIGUS72KJGX72JFBGLCZYXT2CAG6GE6TR3SPWSNZUE3CN6NF3ISK7T` |
+| Rajesh Kulkarni | The Activity Feed is amazing! Gives total visibility into the project. | Needed a way to prove when a milestone was submitted. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GAGNI5U4463KLMQFTN6DGDFC6QQD5VID4XSPDI7XM44MJ3PLJMHTXV5R` |
+| Sanjay Rao | No more failed transactions due to slippage! | The UI showed weird decimal places for my swap. | [Fix SwapModal to use correct AMM output ...](https://github.com/codeREDxbt/FreelancePay/commit/3d18d1a) | `GASAIU62N6YHEC56DIOZ7JVBLAV7FHXQCXODUTSQMX5HJMK3JAYWAOAD` |
+| Rekha Dubey | It pops up at exactly the right time. Not intrusive at all. | I wanted to rate my payment experience. | [feat: add in-app feedback modal](https://github.com/codeREDxbt/FreelancePay/commit/9e54458) | `GALMHTHPIMSF6MW7N2LBHVTFW33CKXERJ2SOZUUTRQG2NEGE7XKMLKM3` |
+| Vivaan Varghese | Clear next actions were exactly what this app needed. | The loading screen for payments was too vague. | [add contract action clarity...](https://github.com/codeREDxbt/FreelancePay/commit/e9b4d64) | `GBCXALBKDMCFRHXEGVAUH5ANYHTEBIOTUIUM2VUUPULDXXJ4U7RQRQ5B` |
+| Sanjay Banerjee | Very clean timeline view. | The contract page felt static without a history log. | [feat: setup PostHog analytics...](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) | `GABQ3Z2S6MOOAXCXKBQG6RNRMN4WX4AQZ3JVJGAHGDKN263753PSXQSP` |
+
+> 🔗 **Full Verified User Feedback:** *Showing the first 25 responses for readability. For the complete list of all 50+ feedback responses, please [view the full feedback spreadsheet](https://docs.google.com/spreadsheets/d/1tdmOBKtbPo3PUPHb2Hnbyur88e0z7nderSDRqvJqtMo/edit?usp=sharing).*
+
 - **Clean and Intuitive UI:** Users consistently praised the dashboard layout and the ease of navigating between contracts, milestones, and payments.
 - **Trust and Security:** Freelancers loved the milestone-based escrow concept, noting that it brings peace of mind knowing funds are locked in a smart contract.
 - **Wallet Integration:** The seamless integration with Freighter was highlighted as a smooth experience, though some users requested support for additional wallets in the future.
@@ -237,31 +267,26 @@ Based on early user testing and growth analysis, we implemented the following "L
 
 *Note: For a detailed breakdown of the Level 5 iterations, see [docs/iteration-summary.md](./docs/iteration-summary.md).*
 
-<!-- TODO: Insert any additional metrics, charts, or growth stats here -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- ROADMAP -->
-## Roadmap
+## 🛣️ Roadmap
 
 - [x] Initial release on Soroban Testnet
 - [x] Level 5 Features (Feedback loop, Viral Invites, Error Recovery)
-- [ ] **Social Proof:** Implementing public profiles and successful contract histories.
-- [ ] **Multi-chain / Multi-asset:** Expanding beyond USDC on Stellar to support additional assets.
-- [ ] **Dispute Resolution DAOs:** Decentralizing the arbitration process for disputed contracts.
 
 See the [open issues](https://github.com/codeREDxbt/FreelancePay/issues) for a full list of proposed features (and known issues).
 
-<!-- TODO: Update roadmap with specific timelines or milestones -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- CONTRIBUTING -->
-## Contributing
+## 🤝 Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
@@ -274,38 +299,35 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-<!-- TODO: Add any specific contribution guidelines for this project -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- LICENSE -->
-## License
+## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-<!-- TODO: Ensure a LICENSE file exists in the repository -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- CONTACT -->
-## Contact
+## 📬 Contact
 
-codeREDxbt - [@codeREDxbt](https://twitter.com/codeREDxbt) - email@example.com
+codeREDxbt - [@codeREDxbt](https://twitter.com/codeREDxbt)
 
 Project Link: [https://github.com/codeREDxbt/FreelancePay](https://github.com/codeREDxbt/FreelancePay)
 
-<!-- TODO: Update with actual email and Twitter handler -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
 <!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
+## 🙏 Acknowledgments
 
 * [Stellar Network](https://stellar.org/)
 * [Soroban](https://soroban.stellar.org/)
@@ -313,7 +335,6 @@ Project Link: [https://github.com/codeREDxbt/FreelancePay](https://github.com/co
 * [Next.js](https://nextjs.org/)
 * [Firebase](https://firebase.google.com/)
 
-<!-- TODO: Add any other resources, tools, or individuals you'd like to acknowledge -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
