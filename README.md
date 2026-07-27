@@ -4,7 +4,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/codeREDxbt/FreelancePay">
-    <img src="public/Landing.png" alt="Logo" width="160" height="auto">
+    <img src="public/logo.png" alt="Logo" width="160" height="auto">
   </a>
 
 <h3 align="center">FreelancePay</h3>
