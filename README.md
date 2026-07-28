@@ -38,7 +38,7 @@
 
 FreelancePay is a decentralized platform built to secure work and payments using programmable trust on the Stellar network. It provides milestone-based escrow tailored for the global workforce, ensuring that freelancers get paid for their completed work and clients only release funds when milestones are met.
 
-This repository contains **over 30+ meaningful commits**, showcasing continuous development, smart contract integration, UI improvements, and core feature implementations.
+This repository contains **over 40+ meaningful commits**, showcasing continuous development, smart contract integration, UI improvements, and core feature implementations.
 
 ### 🔗 Project Resources & Links
 
