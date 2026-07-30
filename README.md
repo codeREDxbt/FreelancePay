@@ -57,6 +57,7 @@ This repository contains **over 40+ meaningful commits**, showcasing continuous 
 | 🌍 **Real-World Usefulness** | Solves the trust issue in gig work. Escrow guarantees payment for freelancers and protects clients from incomplete deliverables via fast, borderless payouts. |
 | ⚙️ **Technical Complexity** | Seamlessly integrates on-chain Stellar Soroban rust contracts with an off-chain Firebase architecture, state synchronization, and secure transaction signing via Freighter. |
 | 🏗️ **Architecture Quality** | Hybrid model: Immutable financial logic on-chain; fast, queryable metadata off-chain. Powered by Next.js App Router for optimal SEO and speed. |
+| 🔗 **V2 Contract (Updated)** | Upgraded smart contract to emit detailed on-chain events (`Init`, `Approve`, `Dispute`) for robust transparency and indexer compatibility. |
 | 💎 **Product Quality** | Premium, production-ready UX. Responsive mobile-first design, comprehensive error handling (Sentry), and real-time user behavior analytics (PostHog). |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -92,6 +93,7 @@ Below is a curated selection of feedback showcasing how we iterated based on rea
 | *"It's great to see exactly when the funds were deposited."* | I had to check Stellar Expert to see when things happened. | [Commit `c77650c`: Setup PostHog analytics](https://github.com/codeREDxbt/FreelancePay/commit/c77650c) |
 | *"The pre-submit review screen is exactly what I needed for peace of mind."* | I accidentally submitted a contract with a typo and couldn't edit it. | [Commit `9da042c`: Add guided sample contract flow](https://github.com/codeREDxbt/FreelancePay/commit/9da042c) |
 | *"No more failed transactions due to slippage!"* | The conversion rate shown was way off from market. | [Commit `3d18d1a`: Fix SwapModal AMM routing](https://github.com/codeREDxbt/FreelancePay/commit/3d18d1a) |
+| *"Contract lacks events for robust indexing." (SCF Review)* | The contract lacked on-chain event emissions. | **V2 Update:** Added comprehensive `env.events().publish(...)` for all state changes. |
 
 > 🔗 **Full Verified User Feedback:** *For the complete list of all 50+ wallet proofs and feedback responses, please [view the full feedback spreadsheet](https://docs.google.com/spreadsheets/d/1tdmOBKtbPo3PUPHb2Hnbyur88e0z7nderSDRqvJqtMo/edit?usp=sharing).*
 
