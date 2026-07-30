@@ -44,8 +44,8 @@ This repository contains **over 40+ meaningful commits**, showcasing continuous 
 
 | Resource | Link / Details |
 | :--- | :--- |
-| 📜 **Contract Address (Testnet)** | `[INSERT NEW CONTRACT ID HERE]` |
-| 🔍 **Proof of 54+ Wallet Interactions** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/[INSERT_NEW_CONTRACT_ID_HERE]) |
+| 📜 **Contract Address (Testnet)** | `CDDGU3TCEKRZ2LR2UIQZ2NH3NS2J5NAJNBGPIZTRD5TXZBNCZNCAK7P4` |
+| 🔍 **Proof of 54+ Wallet Interactions** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CDDGU3TCEKRZ2LR2UIQZ2NH3NS2J5NAJNBGPIZTRD5TXZBNCZNCAK7P4) |
 | 📈 **Pitch Deck (Presentation)** | [View on Google Drive](https://drive.google.com/file/d/1hqha3FRoAfrMUZ23pEreXLHKh4nNEfsM/view?usp=drive_link) |
 | 📊 **Pitch Deck Outline** | [docs/pitch-outline.md](./docs/pitch-outline.md) |
 | 📝 **User Feedback** | [View Spreadsheet](https://docs.google.com/spreadsheets/d/1tdmOBKtbPo3PUPHb2Hnbyur88e0z7nderSDRqvJqtMo/edit?usp=sharing) |

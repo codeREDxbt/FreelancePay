@@ -18,7 +18,7 @@ if (-not $env:DEPLOYER_SECRET) {
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$wasmPath = Join-Path $projectRoot "contracts/escrow/target/wasm32v1-none/release/escrow.wasm"
+$wasmPath = Join-Path $projectRoot "contracts/escrow/target/wasm32-unknown-unknown/release/escrow.wasm"
 
 # --- 0. Locate stellar CLI ---
 $stellarBin = Get-Command stellar -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
@@ -37,7 +37,7 @@ if (-not (Test-Path $wasmPath)) {
     Write-Host "[1/5] Building WASM..." -ForegroundColor Cyan
     Push-Location (Join-Path $projectRoot "contracts/escrow")
     try {
-        cargo build --target wasm32v1-none --release
+        cargo build --target wasm32-unknown-unknown --release
     } finally {
         Pop-Location
     }
@@ -57,7 +57,7 @@ if (-not $wasmOptPath) {
 $deployWasm = $wasmPath
 if ($wasmOptPath) {
     Write-Host "[1b/5] Optimizing WASM with wasm-opt..." -ForegroundColor Cyan
-    $optWasm = Join-Path $projectRoot "contracts/escrow/target/wasm32v1-none/release/escrow_opt.wasm"
+    $optWasm = Join-Path $projectRoot "contracts/escrow/target/wasm32-unknown-unknown/release/escrow_opt.wasm"
     & $wasmOptPath $wasmPath -Oz -o $optWasm --strip-producers --strip-debug --enable-bulk-memory
     if (Test-Path $optWasm) { $deployWasm = $optWasm }
     Write-Host "   Optimized WASM: $deployWasm" -ForegroundColor Green
