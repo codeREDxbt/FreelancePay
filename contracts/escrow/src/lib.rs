@@ -104,7 +104,7 @@ impl EscrowContract {
 
         let state = EscrowState {
             client: client.clone(),
-            freelancer,
+            freelancer: freelancer.clone(),
             admin: client.clone(),
             token: token.clone(),
             total_amount: total,
@@ -118,6 +118,8 @@ impl EscrowContract {
 
         let token_client = token::Client::new(&env, &token);
         token_client.transfer(&client, &env.current_contract_address(), &total);
+
+        env.events().publish(("escrow", "initialized", project_id.clone()), (client.clone(), freelancer.clone(), total));
 
         0
     }
@@ -154,7 +156,9 @@ impl EscrowContract {
         milestone.status = MilestoneStatus::Submitted;
         state.milestones.set(milestone_id, milestone);
 
-        env.storage().persistent().set(&DataKey::Escrow(project_id), &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id.clone()), &state);
+
+        env.events().publish(("escrow", "milestone_submitted", project_id), milestone_id);
     }
 
     pub fn approve_milestone(env: Env, project_id: String, milestone_id: u32) {
@@ -188,6 +192,8 @@ impl EscrowContract {
             &state.freelancer,
             &milestone.amount,
         );
+
+        env.events().publish(("escrow", "milestone_approved", project_id), (milestone_id, milestone.amount));
     }
 
     pub fn flag_dispute(env: Env, project_id: String, caller: Address) {
@@ -197,7 +203,9 @@ impl EscrowContract {
             err(&env, Error::NotAParty);
         }
         state.is_disputed = true;
-        env.storage().persistent().set(&DataKey::Escrow(project_id), &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id.clone()), &state);
+
+        env.events().publish(("escrow", "dispute_flagged", project_id), caller);
     }
 
     pub fn resolve_dispute(env: Env, project_id: String, resolver: Address, release_to: Address, amount: i128) {
@@ -222,6 +230,8 @@ impl EscrowContract {
         env.storage().persistent().set(&DataKey::Escrow(project_id.clone()), &state);
 
         token_client.transfer(&env.current_contract_address(), &release_to, &amount);
+
+        env.events().publish(("escrow", "dispute_resolved", project_id), (release_to, amount));
     }
 
     pub fn cancel_contract(env: Env, project_id: String) {
@@ -254,7 +264,9 @@ impl EscrowContract {
         }
 
         state.is_closed = true;
-        env.storage().persistent().set(&DataKey::Escrow(project_id), &state);
+        env.storage().persistent().set(&DataKey::Escrow(project_id.clone()), &state);
+
+        env.events().publish(("escrow", "cancelled", project_id), ());
     }
 
     pub fn get_state(env: Env, project_id: String) -> EscrowState {

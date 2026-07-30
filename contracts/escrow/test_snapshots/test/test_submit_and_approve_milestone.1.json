@@ -60,6 +60,9 @@
               "function_name": "initialize",
               "args": [
                 {
+                  "string": "proj_1"
+                },
+                {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
                 },
                 {
@@ -126,6 +129,9 @@
               "function_name": "submit_milestone",
               "args": [
                 {
+                  "string": "proj_1"
+                },
+                {
                   "u32": 0
                 }
               ]
@@ -145,6 +151,9 @@
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM",
               "function_name": "approve_milestone",
               "args": [
+                {
+                  "string": "proj_1"
+                },
                 {
                   "u32": 0
                 }
@@ -402,6 +411,9 @@
               "vec": [
                 {
                   "symbol": "Escrow"
+                },
+                {
+                  "string": "proj_1"
                 }
               ]
             },
@@ -419,6 +431,9 @@
                   "vec": [
                     {
                       "symbol": "Escrow"
+                    },
+                    {
+                      "string": "proj_1"
                     }
                   ]
                 },

@@ -60,6 +60,9 @@
               "function_name": "initialize",
               "args": [
                 {
+                  "string": "proj_1"
+                },
+                {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
                 },
                 {
@@ -295,6 +298,9 @@
               "vec": [
                 {
                   "symbol": "Escrow"
+                },
+                {
+                  "string": "proj_1"
                 }
               ]
             },
@@ -312,6 +318,9 @@
                   "vec": [
                     {
                       "symbol": "Escrow"
+                    },
+                    {
+                      "string": "proj_1"
                     }
                   ]
                 },
